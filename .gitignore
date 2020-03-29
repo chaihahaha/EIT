@@ -1,0 +1,7 @@
+data/*
+filesList.csv
+/EIT_train/dataBoundary.npy
+/EIT_train/dataImages.npy
+/EIT_train/dataImagesPCA.npy
+/EIT_train/pca.pkl
+/EIT_train/Result.png
