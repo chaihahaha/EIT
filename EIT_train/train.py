@@ -136,6 +136,7 @@ def error(y1,y2):
 
 img = np.load("dataImages.npy")
 print("Original img shape:",img.shape)
+original_shape = img.shape[1:]
 img = img.reshape(900,-1)
 print(img.shape)
 boundary = np.load("dataBoundary.npy")
@@ -145,24 +146,24 @@ pca.fit(img)
 img=pca.transform(img)
 print("PCA img shape:",img.shape)
 
-norm_factor_img = np.max(img)
-norm_factor_bdr = np.max(boundary)
+norm_factor_img = np.std(img)
+norm_factor_bdr = np.std(boundary)
 img, boundary = torch.from_numpy(img).float()/norm_factor_img, torch.from_numpy(boundary).float()/norm_factor_bdr
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 test_split = 100
 
 # set up dim
-ndim_x = 900
-ndim_y = 256
-ndim_z = 500
+ndim_x = img.shape[1]
+ndim_y = boundary.shape[1]
+ndim_z = 1000
 ndim_tot = ndim_x + ndim_y + ndim_z
 
 
 # set up network structure
-hidden = 80
+hidden = 2*ndim_tot
 nodes = [InputNode(ndim_tot, name='input')]
 
-for k in range(10):
+for k in range(2):
     nodes.append(Node(nodes[-1],
                       GLOWCouplingBlock,
                       {'subnet_constructor':subnet_fc, 'clamp':2.0},
@@ -179,10 +180,11 @@ model = ReversibleGraphNet(nodes, verbose=False)
 # Training parameters
 n_epochs = 5000
 n_its_per_epoch = 2
-batch_size = 640
+batch_size = 900 - test_split
+save_freq = 100
 
 lr = 1e-3
-l2_reg = 2e-5
+l2_reg = 6e-5
 
 y_noise_scale = 1e-1
 zeros_noise_scale = 5e-2
@@ -222,12 +224,14 @@ try:
     t_start = time()
     for i_epoch in range(n_epochs):
         print("Epoch:",i_epoch,"Loss:",train(i_epoch))
+        if i_epoch%save_freq == 0:
+            torch.save(model.state_dict(), "model.torch")
 except KeyboardInterrupt:
     pass
 finally:
     print(f"\n\nTraining took {(time()-t_start)/60:.2f} minutes\n")
 
-N_samp = 100
+N_samp = 10
 
 x_samps = img[:N_samp]
 y_samps = boundary[:N_samp]
@@ -239,14 +243,14 @@ y_samps = torch.cat([torch.randn(N_samp, ndim_z),
 y_samps = y_samps.to(device)
 y_p=predict(x_samps)
 print("error of forward prediction:",error(y_p,y_samps[:,-ndim_y:]).item())
-sample_index = 4
-sample_boundary = y_samps[sample_index:sample_index+1,:]
-sample_img = x_samps[sample_index:sample_index+1,:].detach().numpy()*norm_factor_img
-recovered_img = model(sample_boundary,rev=True)[:,:ndim_x].cpu().detach().numpy()*norm_factor_img
-print("Recovered img shape:",recovered_img.shape)
-fig,axs = plt.subplots(1,2)
-axs[0].imshow(pca.inverse_transform(recovered_img).reshape(266, 256))
-axs[0].set_title('recovered img')
-axs[1].imshow(pca.inverse_transform(sample_img).reshape(266, 256))
-axs[1].set_title('original img')
-fig.savefig("Result.png")
+for sample_index in range(N_samp):
+    sample_boundary = y_samps[sample_index,:].view(1,-1)
+    sample_img = x_samps[sample_index,:].view(1,-1).detach().numpy()*norm_factor_img
+    recovered_img = model(sample_boundary,rev=True)[:,:ndim_x].cpu().detach().numpy()*norm_factor_img
+    fig,axs = plt.subplots(1,2)
+    axs[0].imshow(pca.inverse_transform(recovered_img).reshape(original_shape))
+    axs[0].set_title('recovered img')
+    axs[1].imshow(pca.inverse_transform(sample_img).reshape(original_shape))
+    axs[1].set_title('original img')
+    fig.savefig("Result.png")
+    fig.clf()
