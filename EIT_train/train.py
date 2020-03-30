@@ -1,21 +1,12 @@
 import numpy as np
 from sklearn.decomposition import PCA
 from time import time
-
+from gen_model import *
 import torch
-import torch.nn as nn
 import torch.optim
 import numpy as np
 import matplotlib.pyplot as plt
 
-from FrEIA.framework import InputNode, OutputNode, Node, ReversibleGraphNet
-from FrEIA.modules import GLOWCouplingBlock, PermuteRandom
-
-def subnet_fc(c_in, c_out):
-    return nn.Sequential(nn.Linear(c_in, hidden),nn.ReLU(),
-                         nn.Linear(hidden,  c_out))
-def subnet_conv(c_in, c_out):
-    return nn.Conv2d(in_channels=c_in, out_channels=c_out, kernel_size=1)
 
 def MMD_multiscale(x, y):
     xx, yy, zz = torch.mm(x,x.t()), torch.mm(y,y.t()), torch.mm(x,y.t())
@@ -128,26 +119,33 @@ def train(i_epoch=0):
 
     return l_tot / batch_idx
 
-def predict(x_samps):
-    return model(torch.cat((x_samps, torch.zeros(N_samp, ndim_tot - ndim_x)),
-                                 dim=1).to(device))[:,-ndim_y:]
-def error(y1,y2):
-    return torch.mean((y1**2-y2**2)/y2**2)/len(y1)
+
 
 img = np.load("dataImages.npy")
 print("Original img shape:",img.shape)
 original_shape = img.shape[1:]
+
 img = img.reshape(900,-1)
 print(img.shape)
+
 boundary = np.load("dataBoundary.npy")
 print("Original boundary shape:",boundary.shape)
+
 pca = PCA()
 pca.fit(img)
 img=pca.transform(img)
 print("PCA img shape:",img.shape)
+with open("pca.pkl", "wb") as f:
+    pk.dump(pca, f)
 
 norm_factor_img = np.std(img)
 norm_factor_bdr = np.std(boundary)
+print("norm_factor_img:",norm_factor_img)
+print("norm_factor_bdr:",norm_factor_bdr)
+
+with open("norm_factor.pkl","wb") as f:
+    pk.dump((norm_factor_img, norm_factor_bdr), f)
+
 img, boundary = torch.from_numpy(img).float()/norm_factor_img, torch.from_numpy(boundary).float()/norm_factor_bdr
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 test_split = 100
@@ -157,28 +155,13 @@ ndim_x = img.shape[1]
 ndim_y = boundary.shape[1]
 ndim_z = 1000
 ndim_tot = ndim_x + ndim_y + ndim_z
+print("dims:",ndim_x,ndim_y,ndim_z,ndim_tot)
 
-
-# set up network structure
-hidden = 2*ndim_tot
-nodes = [InputNode(ndim_tot, name='input')]
-
-for k in range(2):
-    nodes.append(Node(nodes[-1],
-                      GLOWCouplingBlock,
-                      {'subnet_constructor':subnet_fc, 'clamp':2.0},
-                      name=F'coupling_{k}'))
-    nodes.append(Node(nodes[-1],
-                      PermuteRandom,
-                      {'seed':k},
-                      name=F'permute_{k}'))
-
-nodes.append(OutputNode(nodes[-1], name='output'))
-
-model = ReversibleGraphNet(nodes, verbose=False)
+# set up model
+model = Model(ndim_tot * 2, ndim_tot)
 
 # Training parameters
-n_epochs = 5000
+n_epochs = 1000
 n_its_per_epoch = 2
 batch_size = 900 - test_split
 save_freq = 100
@@ -231,26 +214,4 @@ except KeyboardInterrupt:
 finally:
     print(f"\n\nTraining took {(time()-t_start)/60:.2f} minutes\n")
 
-N_samp = 10
 
-x_samps = img[:N_samp]
-y_samps = boundary[:N_samp]
-print(x_samps.shape,y_samps.shape)
-y_samps += y_noise_scale * torch.randn(N_samp, ndim_y)
-y_samps = torch.cat([torch.randn(N_samp, ndim_z),
-                     zeros_noise_scale * torch.zeros(N_samp, ndim_tot - ndim_y - ndim_z),
-                     y_samps], dim=1)
-y_samps = y_samps.to(device)
-y_p=predict(x_samps)
-print("error of forward prediction:",error(y_p,y_samps[:,-ndim_y:]).item())
-for sample_index in range(N_samp):
-    sample_boundary = y_samps[sample_index,:].view(1,-1)
-    sample_img = x_samps[sample_index,:].view(1,-1).detach().numpy()*norm_factor_img
-    recovered_img = model(sample_boundary,rev=True)[:,:ndim_x].cpu().detach().numpy()*norm_factor_img
-    fig,axs = plt.subplots(1,2)
-    axs[0].imshow(pca.inverse_transform(recovered_img).reshape(original_shape))
-    axs[0].set_title('recovered img')
-    axs[1].imshow(pca.inverse_transform(sample_img).reshape(original_shape))
-    axs[1].set_title('original img')
-    fig.savefig("Result.png")
-    fig.clf()
