@@ -184,7 +184,7 @@ batch_size = 900 - test_split
 save_freq = 100
 
 lr = 1e-3
-l2_reg = 6e-5
+l2_reg = 2e-4
 
 y_noise_scale = 1e-1
 zeros_noise_scale = 5e-2
@@ -225,7 +225,7 @@ try:
     for i_epoch in range(n_epochs):
         print("Epoch:",i_epoch,"Loss:",train(i_epoch))
         if i_epoch%save_freq == 0:
-            torch.save(model.state_dict(), "model.torch")
+            torch.save(model.state_dict(), "./checkpoints/model"+str(i_epoch)+".torch")
 except KeyboardInterrupt:
     pass
 finally:
