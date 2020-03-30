@@ -3,6 +3,8 @@ filesList.csv
 **.png
 **.pyc
 **.pkl
+**.torch
+/checkpoints/*
 /EIT_train/dataBoundary.npy
 /EIT_train/dataImages.npy
 /EIT_train/dataImagesPCA.npy

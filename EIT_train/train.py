@@ -7,6 +7,7 @@ import torch.optim
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle as pk
+import os
 
 
 def MMD_multiscale(x, y):
@@ -204,12 +205,16 @@ for param in trainable_parameters:
 
 model.to(device)
 
+ckpt_dir = "./checkpoints/"
+if not os.path.exists(ckpt_dir):
+    os.makedirs(ckpt_dir)
+
 try:
     t_start = time()
     for i_epoch in range(n_epochs):
         print("Epoch:",i_epoch,"Loss:",train(i_epoch))
         if i_epoch%save_freq == 0:
-            torch.save(model.state_dict(), "./checkpoints/model"+str(i_epoch)+".torch")
+            torch.save(model.state_dict(), ckpt_dir + "model"+str(i_epoch)+".torch")
 except KeyboardInterrupt:
     pass
 finally:
