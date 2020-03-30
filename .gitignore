@@ -6,3 +6,5 @@ filesList.csv
 /EIT_train/pca.pkl
 /EIT_train/Result.png
 /EIT_train/model.torch
+/EIT_train/FrEIA/__pycache__/*
+/EIT_train/FrEIA/modules/__pycache__/*
