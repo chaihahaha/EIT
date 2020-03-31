@@ -4,12 +4,14 @@ filesList.csv
 **.pyc
 **.pkl
 **.torch
+**.tar.gz
 /checkpoints/*
 /EIT_train/dataBoundary.npy
 /EIT_train/dataImages.npy
 /EIT_train/dataImagesPCA.npy
 /EIT_train/pca.pkl
 /EIT_train/Result.png
+/EIT_train/img/*
 /EIT_train/checkpoints/*
 /EIT_train/FrEIA/__pycache__/*
 /EIT_train/FrEIA/modules/__pycache__/*
