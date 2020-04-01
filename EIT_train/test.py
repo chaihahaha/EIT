@@ -5,19 +5,20 @@ import pickle as pk
 from gen_model import *
 import sys
 import os
+from utils import *
 
 # load pca from file
 with open("pca.pkl", "rb") as f:
     pca = pk.load(f)
-with open("norm_factor.pkl","rb") as f:
-    norm_factor_img, norm_factor_bdr = pk.load(f)
+with open("params.pkl","rb") as f:
+    params = pk.load(f)
+    (norm_factor_img, norm_factor_bdr, original_shape, ndim_x, ndim_y, ndim_z, ndim_tot, ckpt_dir) = params
 original_shape = (266,256)
 # load model from file
-ndim_x, ndim_y, ndim_z, ndim_tot = 900, 256, 1000, 2156
 model = Model(ndim_tot * 2, ndim_tot)
 i_epoch = sys.argv[1]
-ckpt_dir = "./checkpoints/"
-model.load_state_dict(torch.load(ckpt_dir + "model"+i_epoch+".torch"))
+checkpoint = torch.load(ckpt_dir + "model"+i_epoch+".torch")
+model.load_state_dict(checkpoint['model_state_dict'])
 img_dir = "./img/"
 if not os.path.exists(img_dir):
     os.makedirs(img_dir)
