@@ -64,9 +64,6 @@ lambd_predict = 3.
 lambd_latent = 300.
 lambd_rev = 400.
 
-pad_x = torch.zeros(batch_size, ndim_tot - ndim_x)
-pad_yz = torch.zeros(batch_size, ndim_tot - ndim_y - ndim_z)
-
 trainable_parameters = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.Adam(trainable_parameters, lr=lr, betas=(0.8, 0.9),
                              eps=1e-6, weight_decay=l2_reg)
