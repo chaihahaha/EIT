@@ -5,7 +5,6 @@ import pickle as pk
 from gen_model import *
 import sys
 import os
-from train_utils import *
 
 # load pca from file
 with open("pca.pkl", "rb") as f:
