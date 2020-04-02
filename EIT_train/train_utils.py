@@ -1,5 +1,6 @@
-
-def MMD_multiscale(x, y):
+from time import time
+import torch
+def MMD_multiscale(x, y, device):
     xx, yy, zz = torch.mm(x,x.t()), torch.mm(y,y.t()), torch.mm(x,y.t())
 
     rx = (xx.diag().unsqueeze(0).expand_as(xx))
@@ -24,7 +25,7 @@ def MMD_multiscale(x, y):
 def fit(input, target):
     return torch.mean((input - target)**2)
 
-def train(i_epoch=0):
+def train(model, optimizer, train_loader, n_epochs, n_its_per_epoch, batch_size, zeros_noise_scale, ndim_x, ndim_y, ndim_z, ndim_tot, device, y_noise_scale, lambd_predict, lambd_latent, lambd_rev, i_epoch=0):
     model.train()
 
     l_tot = 0
@@ -70,7 +71,7 @@ def train(i_epoch=0):
         output_block_grad = torch.cat((output[:, :ndim_z],           # remove rand, same shape as y_short
                                        output[:, -ndim_y:].data), dim=1)
 
-        l += lambd_latent * loss_latent(output_block_grad, y_short) # apply Latent Loss on latent output and output y
+        l += lambd_latent * loss_latent(output_block_grad, y_short, device) # apply Latent Loss on latent output and output y
         l_tot += l.data.item()
 
         # l is for z latent loss and y prediction loss
@@ -95,7 +96,8 @@ def train(i_epoch=0):
             lambd_rev
             * loss_factor
             * loss_backward(output_rev_rand[:, :ndim_x],
-                            x[:, :ndim_x]) #  apply loss backward on recovered x and real x
+                            x[:, :ndim_x], 
+                            device) #  apply loss backward on recovered x and real x
         )
 
         l_rev += lambd_predict * loss_fit(output_rev, x) # apply loss fit on recovered x and real x
@@ -109,3 +111,6 @@ def train(i_epoch=0):
         optimizer.step()
 
     return l_tot / batch_idx
+loss_backward = MMD_multiscale
+loss_latent = MMD_multiscale
+loss_fit = fit

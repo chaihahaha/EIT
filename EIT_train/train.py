@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle as pk
 import os
-from utils import *
+from train_utils import *
 
 img = np.load("dataImages.npy")
 print("Original img shape:",img.shape)
@@ -54,7 +54,7 @@ batch_size = 900 - test_split
 save_freq = 100
 
 lr = 2e-5
-l2_reg = 1e-3
+l2_reg = 1e-2
 
 y_noise_scale = 1e-1
 zeros_noise_scale = 5e-2
@@ -70,12 +70,6 @@ pad_yz = torch.zeros(batch_size, ndim_tot - ndim_y - ndim_z)
 trainable_parameters = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.Adam(trainable_parameters, lr=lr, betas=(0.8, 0.9),
                              eps=1e-6, weight_decay=l2_reg)
-
-
-
-loss_backward = MMD_multiscale
-loss_latent = MMD_multiscale
-loss_fit = fit
 
 test_loader = torch.utils.data.DataLoader(
     torch.utils.data.TensorDataset(img[:test_split], boundary[:test_split]),
@@ -100,10 +94,11 @@ with open("params.pkl","wb") as f:
 try:
     t_start = time()
     for i_epoch in range(n_epochs):
-        print("Epoch:",i_epoch,"Loss:",train(i_epoch))
+        loss = train(model, optimizer, train_loader, n_epochs, n_its_per_epoch, batch_size, zeros_noise_scale, ndim_x, ndim_y, ndim_z, ndim_tot, device, y_noise_scale, lambd_predict, lambd_latent, lambd_rev, i_epoch)
+        print("Epoch:",i_epoch,"Loss:",loss)
         if i_epoch%save_freq == 0:
             model_opt = {'model_state_dict': model.state_dict(),
-                         'optimizer_state_dict': optimizer.state_dict()
+                         'optimizer_state_dict': optimizer.state_dict(),
                          'epoch': i_epoch}
             torch.save(model_opt, ckpt_dir + "model"+str(i_epoch)+".torch")
 except KeyboardInterrupt:
