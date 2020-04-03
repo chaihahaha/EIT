@@ -43,12 +43,12 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 test_split = 100
 
 # Training parameters
-n_epochs = 3000
+n_epochs = 6000
 n_its_per_epoch = 2
 batch_size = 900 - test_split
 save_freq = 100
 
-lr = 1e-5
+lr = 2e-5
 l2_reg = 2e-5
 
 y_noise_scale = 1e-1
@@ -62,7 +62,7 @@ lambd_rev = 400.
 trainable_parameters = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.Adam(trainable_parameters, lr=lr, betas=(0.8, 0.9),
                              eps=1e-6, weight_decay=l2_reg)
-optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+#optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 test_loader = torch.utils.data.DataLoader(
     torch.utils.data.TensorDataset(img[:test_split], boundary[:test_split]),
@@ -87,7 +87,7 @@ with open("params.pkl","wb") as f:
 try:
     t_start = time()
     for i_epoch in range(old_epoch + 1, old_epoch + n_epochs):
-        loss = train(model, optimizer, train_loader, n_epochs, n_its_per_epoch, batch_size, zeros_noise_scale, ndim_x, ndim_y, ndim_z, ndim_tot, device, y_noise_scale, lambd_predict, lambd_latent, lambd_rev, i_epoch)
+        loss = train(model, optimizer, train_loader, old_epoch + n_epochs, n_its_per_epoch, batch_size, zeros_noise_scale, ndim_x, ndim_y, ndim_z, ndim_tot, device, y_noise_scale, lambd_predict, lambd_latent, lambd_rev, i_epoch)
         print("Epoch:",i_epoch,"Loss:",loss)
         if i_epoch%save_freq == 0:
             model_opt = {'model_state_dict': model.state_dict(),

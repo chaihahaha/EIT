@@ -14,13 +14,13 @@ img = np.load("dataImages.npy")
 print("Original img shape:",img.shape)
 original_shape = img.shape[1:]
 
-img = img.reshape(900,-1)
+img = img.reshape(img.shape[0],-1)
 print(img.shape)
 
 boundary = np.load("dataBoundary.npy")
 print("Original boundary shape:",boundary.shape)
 
-pca = PCA()
+pca = PCA(n_components=0.99, svd_solver='full')
 pca.fit(img)
 img=pca.transform(img)
 print("PCA img shape:",img.shape)
@@ -48,9 +48,9 @@ print("dims:",ndim_x,ndim_y,ndim_z,ndim_tot)
 model = Model(ndim_tot * 2, ndim_tot)
 
 # Training parameters
-n_epochs = 3000
-n_its_per_epoch = 2
-batch_size = 900 - test_split
+n_epochs = 5000
+n_its_per_epoch = 4
+batch_size = 500
 save_freq = 100
 
 lr = 2e-5

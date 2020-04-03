@@ -25,8 +25,8 @@ if not os.path.exists(img_dir):
 N_samp = 10
 img = np.load("dataImages.npy")
 boundary = np.load("dataBoundary.npy")
-x_samps = img[:N_samp]
-y_samps = torch.from_numpy(boundary[:N_samp]).float()
+x_samps = img[-N_samp:]
+y_samps = torch.from_numpy(boundary[-N_samp:]).float()
 y_samps = torch.cat([torch.randn(N_samp, ndim_z),
                      torch.zeros(N_samp, ndim_tot - ndim_y - ndim_z),
                      y_samps], dim=1)
