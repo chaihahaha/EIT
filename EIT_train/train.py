@@ -20,12 +20,17 @@ print(img.shape)
 boundary = np.load("dataBoundary.npy")
 print("Original boundary shape:",boundary.shape)
 
+pca_filename = "pca.pkl"
+#if not os.path.exists(pca_filename):
 pca = PCA(n_components=0.99, svd_solver='full')
 pca.fit(img)
 img=pca.transform(img)
 print("PCA img shape:",img.shape)
-with open("pca.pkl", "wb") as f:
+with open(pca_filename, "wb") as f:
     pk.dump(pca, f)
+#else:
+#    with open(pca_filename, "rb") as f:
+#        pca = pk.load(f)
 
 norm_factor_img = np.std(img)
 norm_factor_bdr = np.std(boundary)
@@ -35,6 +40,7 @@ print("norm_factor_bdr:",norm_factor_bdr)
 
 img, boundary = torch.from_numpy(img).float()/norm_factor_img, torch.from_numpy(boundary).float()/norm_factor_bdr
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print("using",device)
 test_split = 100
 
 # set up dim
@@ -45,19 +51,19 @@ ndim_tot = ndim_x + ndim_y + ndim_z
 print("dims:",ndim_x,ndim_y,ndim_z,ndim_tot)
 
 # set up model
-model = Model(ndim_tot * 2, ndim_tot)
+model = Model(ndim_tot)
 
 # Training parameters
-n_epochs = 5000
+n_epochs = 10000 + 1
 n_its_per_epoch = 4
-batch_size = 500
-save_freq = 100
+batch_size = 1000
+save_freq = 200
 
 lr = 2e-5
-l2_reg = 1e-2
+l2_reg = 2e-5
 
-y_noise_scale = 1e-1
-zeros_noise_scale = 5e-2
+y_noise_scale = 1e-7
+zeros_noise_scale = 1e-8
 
 # relative weighting of losses:
 lambd_predict = 3.
@@ -85,7 +91,7 @@ ckpt_dir = "./checkpoints/"
 if not os.path.exists(ckpt_dir):
     os.makedirs(ckpt_dir)
 with open("params.pkl","wb") as f:
-    params = (norm_factor_img, norm_factor_bdr, original_shape, ndim_x, ndim_y, ndim_z, ndim_tot, ckpt_dir)
+    params = (norm_factor_img, norm_factor_bdr, original_shape, ndim_x, ndim_y, ndim_z, ndim_tot, ckpt_dir, pca_filename)
     pk.dump(params, f)
 
 try:

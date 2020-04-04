@@ -12,9 +12,8 @@ with open("pca.pkl", "rb") as f:
 with open("params.pkl","rb") as f:
     params = pk.load(f)
     (norm_factor_img, norm_factor_bdr, original_shape, ndim_x, ndim_y, ndim_z, ndim_tot, ckpt_dir) = params
-original_shape = (266,256)
 # load model from file
-model = Model(ndim_tot * 2, ndim_tot)
+model = Model(ndim_tot)
 i_epoch = sys.argv[1]
 checkpoint = torch.load(ckpt_dir + "model"+i_epoch+".torch")
 model.load_state_dict(checkpoint['model_state_dict'])
@@ -30,11 +29,11 @@ y_samps = torch.from_numpy(boundary[-N_samp:]).float()
 y_samps = torch.cat([torch.randn(N_samp, ndim_z),
                      torch.zeros(N_samp, ndim_tot - ndim_y - ndim_z),
                      y_samps], dim=1)
-model.to("cpu")
+model.to("cuda")
 for sample_index in range(N_samp):
     sample_boundary = y_samps[sample_index,:].view(1,-1)
     sample_img = x_samps[sample_index,:,:]
-    recovered_img = model(sample_boundary,rev=True)[:,:ndim_x].detach().numpy()*norm_factor_img
+    recovered_img = model(sample_boundary.cuda(),rev=True)[:,:ndim_x].cpu().detach().numpy()*norm_factor_img
     fig,axs = plt.subplots(1,2)
     axs[0].imshow(pca.inverse_transform(recovered_img).reshape(original_shape))
     axs[0].set_title('recovered img')

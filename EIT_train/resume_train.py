@@ -15,24 +15,23 @@ img = np.load("dataImages.npy")
 print("Original img shape:",img.shape)
 original_shape = img.shape[1:]
 
-img = img.reshape(900,-1)
+img = img.reshape(img.shape[0],-1)
 print(img.shape)
 
 boundary = np.load("dataBoundary.npy")
 print("Original boundary shape:",boundary.shape)
 
+with open("params.pkl","rb") as f:
+    params = pk.load(f)
+    (norm_factor_img, norm_factor_bdr, original_shape, ndim_x, ndim_y, ndim_z, ndim_tot, ckpt_dir, pca_filename) = params
 
 # load pca from file
-with open("pca.pkl", "rb") as f:
+with open(pca_filename, "rb") as f:
     pca = pk.load(f)
 img=pca.transform(img)
 
-with open("params.pkl","rb") as f:
-    params = pk.load(f)
-    (norm_factor_img, norm_factor_bdr, original_shape, ndim_x, ndim_y, ndim_z, ndim_tot, ckpt_dir) = params
-original_shape = (266,256)
 # load model from file
-model = Model(ndim_tot * 2, ndim_tot)
+model = Model(ndim_tot)
 
 checkpoint = torch.load(ckpt_dir + "model"+sys.argv[1]+".torch")
 model.load_state_dict(checkpoint['model_state_dict'])
@@ -40,15 +39,16 @@ old_epoch = checkpoint['epoch']
 
 img, boundary = torch.from_numpy(img).float()/norm_factor_img, torch.from_numpy(boundary).float()/norm_factor_bdr
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print("using",device)
 test_split = 100
 
 # Training parameters
-n_epochs = 6000
-n_its_per_epoch = 2
-batch_size = 900 - test_split
-save_freq = 100
+n_epochs = 6000 + 1
+n_its_per_epoch = 4
+batch_size = 500
+save_freq = 200
 
-lr = 2e-5
+lr = 1e-5
 l2_reg = 2e-5
 
 y_noise_scale = 1e-1
