@@ -83,7 +83,7 @@ train_loader = torch.utils.data.DataLoader(
     batch_size=batch_size, shuffle=True, drop_last=True)
 
 for param in trainable_parameters:
-    param.data = 0.05*torch.randn_like(param)
+    param.data = 0.0005*torch.randn_like(param)
 
 model.to(device)
 
