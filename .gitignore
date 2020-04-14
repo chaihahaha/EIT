@@ -6,7 +6,8 @@ filesList.csv
 **.pkl
 **.torch
 **.tar.gz
-/checkpoints/*
+EIT_train/checkpoints/*
+EIT_train/checkpoint/*
 /EIT_train/dataBoundary.npy
 /EIT_train/dataImages.npy
 /EIT_train/dataImagesPCA.npy

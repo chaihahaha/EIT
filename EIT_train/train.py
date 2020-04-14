@@ -1,112 +1,151 @@
-import numpy as np
-from sklearn.decomposition import PCA
 from time import time
-from gen_model import *
+
 import torch
-import torch.optim
-import numpy as np
-import matplotlib.pyplot as plt
-import pickle as pk
-import os
-from train_utils import *
+from torch.autograd import Variable
 
-img = np.load("dataImages.npy")
-print("Original img shape:",img.shape)
-original_shape = img.shape[1:]
+from FrEIA.framework import *
+from FrEIA.modules import *
 
-img = img.reshape(img.shape[0],-1)
-print(img.shape)
+import config as c
 
-boundary = np.load("dataBoundary.npy")
-print("Original boundary shape:",boundary.shape)
+import losses
+import model
+import monitoring
 
-pca_filename = "pca.pkl"
-#if not os.path.exists(pca_filename):
-pca = PCA(n_components=0.99, svd_solver='full')
-pca.fit(img)
-img=pca.transform(img)
-print("PCA img shape:",img.shape)
-with open(pca_filename, "wb") as f:
-    pk.dump(pca, f)
-#else:
-#    with open(pca_filename, "rb") as f:
-#        pca = pk.load(f)
+def noise_batch(ndim):
+    return torch.randn(c.batch_size, ndim).to(c.device)
 
-norm_factor_img = np.std(img)
-norm_factor_bdr = np.std(boundary)
-print("norm_factor_img:",norm_factor_img)
-print("norm_factor_bdr:",norm_factor_bdr)
+def loss_max_likelihood(out, y):
+    jac = model.model.jacobian(run_forward=False)
 
+    neg_log_likeli = ( 0.5 / c.y_uncertainty_sigma**2 * torch.sum((out[:, -ndim_y:]       - y[:, -ndim_y:])**2, 1)
+                     + 0.5 / c.zeros_noise_scale**2   * torch.sum((out[:, ndim_z:-ndim_y] - y[:, ndim_z:-ndim_y])**2, 1)
+                     + 0.5 * torch.sum(out[:, :ndim_z]**2, 1)
+                     - jac)
 
-img, boundary = torch.from_numpy(img).float()/norm_factor_img, torch.from_numpy(boundary).float()/norm_factor_bdr
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print("using",device)
-test_split = 100
+    return c.lambd_max_likelihood * torch.mean(neg_log_likeli)
 
-# set up dim
-ndim_x = img.shape[1]
-ndim_y = boundary.shape[1]
-ndim_z = 1000
-ndim_tot = ndim_x + ndim_y + ndim_z
-print("dims:",ndim_x,ndim_y,ndim_z,ndim_tot)
+def loss_forward_mmd(out, y):
+    # Shorten output, and remove gradients wrt y, for latent loss
+    output_block_grad = torch.cat((out[:, :c.ndim_z],
+                                   out[:, -c.ndim_y:].data), dim=1)
+    y_short = torch.cat((y[:, :c.ndim_z], y[:, -c.ndim_y:]), dim=1)
 
-# set up model
-model = Model(ndim_tot)
+    l_forw_fit = c.lambd_fit_forw * losses.l2_fit(out[:, c.ndim_z:], y[:, c.ndim_z:])
+    l_forw_mmd = c.lambd_mmd_forw  * torch.mean(losses.forward_mmd(output_block_grad, y_short))
 
-# Training parameters
-n_epochs = 10000 + 1
-n_its_per_epoch = 4
-batch_size = 1000
-save_freq = 200
+    return l_forw_fit, l_forw_mmd
 
-lr = 2e-5
-l2_reg = 2e-5
+def loss_backward_mmd(x, y):
+    x_samples = model.model(y, rev=True)
+    MMD = losses.backward_mmd(x, x_samples)
+    if c.mmd_back_weighted:
+        MMD *= torch.exp(- 0.5 / c.y_uncertainty_sigma**2 * losses.l2_dist_matrix(y, y))
+    return c.lambd_mmd_back * torch.mean(MMD)
 
-y_noise_scale = 1e-7
-zeros_noise_scale = 1e-8
+def loss_reconstruction(out_y, y, x):
+    cat_inputs = [out_y[:, :c.ndim_z] + c.add_z_noise * noise_batch(c.ndim_z)]
+    if c.ndim_pad_zy:
+        cat_inputs.append(out_y[:, c.ndim_z:-c.ndim_y] + c.add_pad_noise * noise_batch(c.ndim_pad_zy))
+    cat_inputs.append(out_y[:, -c.ndim_y:] + c.add_y_noise * noise_batch(c.ndim_y))
 
-# relative weighting of losses:
-lambd_predict = 3.
-lambd_latent = 300.
-lambd_rev = 400.
+    x_reconstructed = model.model(torch.cat(cat_inputs, 1), rev=True)
+    return c.lambd_reconstruct * losses.l2_fit(x_reconstructed, x)
 
-trainable_parameters = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.Adam(trainable_parameters, lr=lr, betas=(0.8, 0.9),
-                             eps=1e-6, weight_decay=l2_reg)
+def train_epoch(i_epoch, test=False):
 
-test_loader = torch.utils.data.DataLoader(
-    torch.utils.data.TensorDataset(img[:test_split], boundary[:test_split]),
-    batch_size=batch_size, shuffle=True, drop_last=True)
+    if not test:
+        model.model.train()
+        loader = c.train_loader
 
-train_loader = torch.utils.data.DataLoader(
-    torch.utils.data.TensorDataset(img[test_split:], boundary[test_split:]),
-    batch_size=batch_size, shuffle=True, drop_last=True)
-
-for param in trainable_parameters:
-    param.data = 0.0005*torch.randn_like(param)
-
-model.to(device)
-
-ckpt_dir = "./checkpoints/"
-if not os.path.exists(ckpt_dir):
-    os.makedirs(ckpt_dir)
-with open("params.pkl","wb") as f:
-    params = (norm_factor_img, norm_factor_bdr, original_shape, ndim_x, ndim_y, ndim_z, ndim_tot, ckpt_dir, pca_filename)
-    pk.dump(params, f)
-
-try:
-    t_start = time()
-    for i_epoch in range(n_epochs):
-        loss = train(model, optimizer, train_loader, n_epochs, n_its_per_epoch, batch_size, zeros_noise_scale, ndim_x, ndim_y, ndim_z, ndim_tot, device, y_noise_scale, lambd_predict, lambd_latent, lambd_rev, i_epoch)
-        print("Epoch:",i_epoch,"Loss:",loss)
-        if i_epoch%save_freq == 0:
-            model_opt = {'model_state_dict': model.state_dict(),
-                         'optimizer_state_dict': optimizer.state_dict(),
-                         'epoch': i_epoch}
-            torch.save(model_opt, ckpt_dir + "model"+str(i_epoch)+".torch")
-except KeyboardInterrupt:
-    pass
-finally:
-    print(f"\n\nTraining took {(time()-t_start)/60:.2f} minutes\n")
+    if test:
+        model.model.eval()
+        loader = c.test_loader
+        nograd = torch.no_grad()
+        nograd.__enter__()
 
 
+    batch_idx = 0
+    loss_history = []
+
+    for x, y in loader:
+
+        if batch_idx > c.n_its_per_epoch:
+            break
+
+        batch_losses = []
+
+        batch_idx += 1
+
+        x, y = Variable(x).to(c.device), Variable(y).to(c.device)
+
+        if c.add_y_noise > 0:
+            y += c.add_y_noise * noise_batch(c.ndim_y)
+
+        if c.ndim_pad_x:
+            x = torch.cat((x, c.add_pad_noise * noise_batch(c.ndim_pad_x)), dim=1)
+        if c.ndim_pad_zy:
+            y = torch.cat((c.add_pad_noise * noise_batch(c.ndim_pad_zy), y), dim=1)
+        y = torch.cat((noise_batch(c.ndim_z), y), dim=1)
+
+        out_y = model.model(x)
+
+        if c.train_max_likelihood:
+            batch_losses.append(loss_max_likelihood(out_y, y))
+
+        if c.train_forward_mmd:
+            batch_losses.extend(loss_forward_mmd(out_y, y))
+
+        if c.train_backward_mmd:
+            batch_losses.append(loss_backward_mmd(x, y))
+
+        if c.train_reconstruction:
+            batch_losses.append(loss_reconstruction(out_y, y, x))
+
+        l_total = sum(batch_losses)
+        loss_history.append([l.item() for l in batch_losses])
+
+        if not test:
+            l_total.backward()
+            model.optim_step()
+
+    if test:
+        monitoring.show_hist(out_y[:, :c.ndim_z])
+
+        if c.test_time_functions:
+            out_x = model.model(y, rev=True)
+            for f in c.test_time_functions:
+                f(out_x, out_y, x, y)
+
+        nograd.__exit__(None, None, None)
+
+    return np.mean(loss_history, axis=0)
+
+def main():
+    monitoring.restart()
+
+    try:
+        monitoring.print_config()
+        t_start = time()
+        for i_epoch in range(-c.pre_low_lr, c.n_epochs):
+
+            if i_epoch < 0:
+                for param_group in model.optim.param_groups:
+                    param_group['lr'] = c.lr_init * 1e-1
+
+            train_losses = train_epoch(i_epoch)
+            test_losses  = train_epoch(i_epoch, test=True)
+
+            monitoring.show_loss(np.concatenate([train_losses, test_losses]))
+            model.scheduler_step()
+
+    except:
+        model.save(c.filename_out + '_ABORT')
+        raise
+
+    finally:
+        print("\n\nTraining took %f minutes\n\n" % ((time()-t_start)/60.))
+        model.save(c.filename_out)
+
+if __name__ == "__main__":
+    main()
