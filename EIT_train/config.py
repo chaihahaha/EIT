@@ -6,13 +6,13 @@ import numpy as np
 ######################
 
 # Filename to save the model under
-filename_out    = 'checkpoint/my_inn.ckpt'
+filename_out    = 'checkpoints/my_inn.ckpt'
 # Model to load and continue training. Ignored if empty string
 filename_in     = ''
 # Compute device to perform the training on, 'cuda' or 'cpu'
-device          = 'cuda'
+device          = 'cpu'
 # Use interactive visualization of losses and other plots. Requires visdom
-interactive_visualization = True
+interactive_visualization = False
 # Run a list of python functions at test time after eacch epoch
 # See toy_modes_train.py for reference example
 test_time_functions = []
@@ -22,11 +22,13 @@ test_time_functions = []
 #######################
 
 # Initial learning rate
-lr_init         = 1.0e-3
+lr_init         = 1.0e-4
 #Batch size
-batch_size      = 10
+batch_size      = 1000
 # Total number of epochs to train for
 n_epochs        = 60
+# Saving frequency
+save_freq       = 4
 # End the epoch after this many iterations (or when the train loader is exhausted)
 n_its_per_epoch = 200
 # For the first n epochs, train with a much lower learning rate. This can be
@@ -46,7 +48,7 @@ x_data = torch.Tensor(np.load('dataImages.npy'))
 x_data = x_data.view(len(x_data),-1)
 y_data = torch.Tensor(np.load('dataBoundary.npy'))
 
-test_split = 200
+test_split = 1000
 x_test = x_data[-test_split:]
 y_test = y_data[-test_split:]
 
@@ -116,7 +118,7 @@ N_blocks   = 4
 #
 exponent_clamping = 4.0
 #
-hidden_layer_sizes = 16
+hidden_layer_sizes = 128
 #
 use_permutation = True
 #

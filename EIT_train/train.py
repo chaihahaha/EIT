@@ -110,7 +110,6 @@ def train_epoch(i_epoch, test=False):
             model.optim_step()
 
     if test:
-        monitoring.show_hist(out_y[:, :c.ndim_z])
 
         if c.test_time_functions:
             out_x = model.model(y, rev=True)
@@ -135,9 +134,11 @@ def main():
 
             train_losses = train_epoch(i_epoch)
             test_losses  = train_epoch(i_epoch, test=True)
-
             monitoring.show_loss(np.concatenate([train_losses, test_losses]))
+
             model.scheduler_step()
+            if (i_epoch + 1) % c.save_freq == 0:
+                model.save(c.filename_out)
 
     except:
         model.save(c.filename_out + '_ABORT')

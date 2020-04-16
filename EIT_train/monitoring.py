@@ -27,7 +27,7 @@ class Visualizer:
             for l in loss_labels:
                 self.header += ' %15s' % (l)
 
-    def update_losses(self, losses):
+    def update_losses(self, losses, logscale):
         if self.header:
             print(self.header)
             self.header = None
