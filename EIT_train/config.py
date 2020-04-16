@@ -1,6 +1,7 @@
 '''Global configuration for the experiments'''
 import torch
 import numpy as np
+from functools import reduce
 ######################
 #  General settings  #
 ######################
@@ -45,7 +46,8 @@ adam_betas = (0.9, 0.95)
 #  Data Loader      #
 #####################
 x_data = torch.Tensor(np.load('dataImages.npy'))
-x_data = x_data.view(len(x_data),-1)
+x_data = x_data.view(len(x_data),1,*tuple(x_data.shape[1:]))
+print(x_data.shape)
 y_data = torch.Tensor(np.load('dataBoundary.npy'))
 
 test_split = 1000
@@ -65,12 +67,13 @@ train_loader = torch.utils.data.DataLoader(
 #####################
 #  Data dimensions  #
 #####################
-ndim_x      = x_train.shape[1]
+ndims_x     = (3,*tuple(x_train.shape[2:]))
+ndim_x      = reduce(lambda x,y: x*y, ndims_x, 1)
 ndim_pad_x  = 0
 
 ndim_y      = y_train.shape[1]
-ndim_z      = ndim_x - ndim_y
-ndim_pad_zy  = 0
+ndim_z      = 128
+ndim_pad_zy  = ndim_x + ndim_pad_x - ndim_y - ndim_z
 
 
 assert (ndim_x + ndim_pad_x

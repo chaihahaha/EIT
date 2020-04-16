@@ -7,23 +7,76 @@ from FrEIA.framework import *
 from FrEIA.modules import *
 
 import config as c
+nodes = [InputNode(*(c.ndims_x), name='input')]
+ndim_x = c.ndim_x
+def subnet_fc(c_in, c_out):
+    return nn.Sequential(nn.Linear(c_in, 512), nn.ReLU(),
+                         nn.Linear(512,  c_out))
 
-nodes = [InputNode(c.ndim_x + c.ndim_pad_x, name='input')]
+def subnet_conv(c_in, c_out):
+    return nn.Sequential(nn.Conv2d(c_in, 256,   3, padding=1), nn.ReLU(),
+                         nn.Conv2d(256,  c_out, 3, padding=1))
 
-for i in range(c.N_blocks):
-    nodes.append(Node([nodes[-1].out0],rev_multiplicative_layer, 
-                      {'F_class':F_fully_connected, 
-                       'F_args':{'internal_size':c.hidden_layer_sizes},
-                       'clamp':c.exponent_clamping,
-                      },
-                      name='coupling_{}'.format(i)))
+def subnet_conv_1x1(c_in, c_out):
+    return nn.Sequential(nn.Conv2d(c_in, 256,   1), nn.ReLU(),
+                         nn.Conv2d(256,  c_out, 1))
 
-    if c.use_permutation:
-        nodes.append(Node([nodes[-1].out0], permute_layer, {'seed':i}, name='permute_{}'.format(i)))
+# Higher resolution convolutional part
+for k in range(4):
+   nodes.append(Node(nodes[-1],
+                        GLOWCouplingBlock,
+                        {'subnet_constructor':subnet_conv, 'clamp':1.2},
+                        name=F'conv_high_res_{k}'))
+   nodes.append(Node(nodes[-1],
+                        PermuteRandom,
+                        {'seed':k},
+                        name=F'permute_high_res_{k}'))
 
-nodes.append(OutputNode([nodes[-1].out0], name='output'))
+nodes.append(Node(nodes[-1], IRevNetDownsampling, {}))
 
-model = ReversibleGraphNet(nodes, verbose=c.verbose_construction)
+# Lower resolution convolutional part
+for k in range(12):
+   if k%2 == 0:
+       subnet = subnet_conv_1x1
+   else:
+       subnet = subnet_conv
+
+   nodes.append(Node(nodes[-1],
+                        GLOWCouplingBlock,
+                        {'subnet_constructor':subnet, 'clamp':1.2},
+                        name=F'conv_low_res_{k}'))
+   nodes.append(Node(nodes[-1],
+                        PermuteRandom,
+                        {'seed':k},
+                        name=F'permute_low_res_{k}'))
+
+# Make the outputs into a vector, then split off 1/4 of the outputs for the
+# fully connected part
+nodes.append(Node(nodes[-1], Flatten, {}, name='flatten'))
+split_node = Node(nodes[-1],
+                     Split1D,
+                     {'split_size_or_sections':(ndim_x // 4, 3 * ndim_x // 4), 'dim':0},
+                     name='split')
+nodes.append(split_node)
+
+# Fully connected part
+for k in range(12):
+   nodes.append(Node(nodes[-1],
+                        GLOWCouplingBlock,
+                        {'subnet_constructor':subnet_fc, 'clamp':2.0},
+                        name=F'fully_connected_{k}'))
+   nodes.append(Node(nodes[-1],
+                        PermuteRandom,
+                        {'seed':k},
+                        name=F'permute_{k}'))
+
+# Concatenate the fully connected part and the skip connection to get a single output
+nodes.append(Node([nodes[-1].out0, split_node.out1],
+                     Concat1d, {'dim':0}, name='concat'))
+nodes.append(OutputNode(nodes[-1], name='output'))
+
+model = ReversibleGraphNet(nodes)
+
 model.to(c.device)
 
 params_trainable = list(filter(lambda p: p.requires_grad, model.parameters()))
