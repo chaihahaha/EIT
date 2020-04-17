@@ -46,7 +46,8 @@ adam_betas = (0.9, 0.95)
 #  Data Loader      #
 #####################
 x_data = torch.Tensor(np.load('dataImages.npy'))
-x_data = x_data.expand(len(x_data),3,*tuple(x_data.shape[1:]))
+x_data = x_data.view(len(x_data),1,*tuple(x_data.shape[1:]))
+x_data = x_data.expand(len(x_data),3,*tuple(x_data.shape[2:]))
 print(x_data.shape)
 y_data = torch.Tensor(np.load('dataBoundary.npy'))
 
