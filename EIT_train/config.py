@@ -25,7 +25,7 @@ test_time_functions = []
 # Initial learning rate
 lr_init         = 1.0e-4
 #Batch size
-batch_size      = 1000
+batch_size      = 200
 # Total number of epochs to train for
 n_epochs        = 60
 # Saving frequency

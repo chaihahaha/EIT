@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import config as c
 
 def MMD_matrix_multiscale(x, y, widths_exponents):
+    x = x.view(x.shape[0],-1)
+    y = y.view(y.shape[0],-1)
     xx, yy, xy = torch.mm(x,x.t()), torch.mm(y,y.t()), torch.mm(x,y.t())
 
     rx = (xx.diag().unsqueeze(0).expand_as(xx))

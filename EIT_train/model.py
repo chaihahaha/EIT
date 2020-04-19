@@ -10,45 +10,45 @@ import config as c
 nodes = [InputNode(*(c.ndims_x), name='input')]
 ndim_x = c.ndim_x
 def subnet_fc(c_in, c_out):
-    return nn.Sequential(nn.Linear(c_in, 512), nn.ReLU(),
-                         nn.Linear(512,  c_out))
+    return nn.Sequential(nn.Linear(c_in, 64), nn.ReLU(),
+                         nn.Linear(64,  c_out))
 
 def subnet_conv(c_in, c_out):
-    return nn.Sequential(nn.Conv2d(c_in, 256,   3, padding=1), nn.ReLU(),
-                         nn.Conv2d(256,  c_out, 3, padding=1))
+    return nn.Sequential(nn.Conv2d(c_in, 16,   3, padding=1), nn.ReLU(),
+                         nn.Conv2d(16,  c_out, 3, padding=1))
 
 def subnet_conv_1x1(c_in, c_out):
-    return nn.Sequential(nn.Conv2d(c_in, 256,   1), nn.ReLU(),
-                         nn.Conv2d(256,  c_out, 1))
+    return nn.Sequential(nn.Conv2d(c_in, 16,   1), nn.ReLU(),
+                         nn.Conv2d(16,  c_out, 1))
 
 # Higher resolution convolutional part
-for k in range(4):
-   nodes.append(Node(nodes[-1],
-                        GLOWCouplingBlock,
-                        {'subnet_constructor':subnet_conv, 'clamp':1.2},
-                        name=F'conv_high_res_{k}'))
-   nodes.append(Node(nodes[-1],
-                        PermuteRandom,
-                        {'seed':k},
-                        name=F'permute_high_res_{k}'))
-
-nodes.append(Node(nodes[-1], IRevNetDownsampling, {}))
+for k in range(1):
+    nodes.append(Node(nodes[-1],
+                         GLOWCouplingBlock,
+                         {'subnet_constructor':subnet_conv, 'clamp':1.2},
+                         name=F'conv_high_res_{k}'))
+    nodes.append(Node(nodes[-1],
+                         PermuteRandom,
+                         {'seed':k},
+                         name=F'permute_high_res_{k}'))
+ 
+    nodes.append(Node(nodes[-1], IRevNetDownsampling, {}))
 
 # Lower resolution convolutional part
-for k in range(12):
-   if k%2 == 0:
-       subnet = subnet_conv_1x1
-   else:
-       subnet = subnet_conv
-
-   nodes.append(Node(nodes[-1],
-                        GLOWCouplingBlock,
-                        {'subnet_constructor':subnet, 'clamp':1.2},
-                        name=F'conv_low_res_{k}'))
-   nodes.append(Node(nodes[-1],
-                        PermuteRandom,
-                        {'seed':k},
-                        name=F'permute_low_res_{k}'))
+#for k in range(1):
+#    if k%2 == 0:
+#        subnet = subnet_conv_1x1
+#    else:
+#        subnet = subnet_conv
+#
+#    nodes.append(Node(nodes[-1],
+#                         GLOWCouplingBlock,
+#                         {'subnet_constructor':subnet, 'clamp':1.2},
+#                         name=F'conv_low_res_{k}'))
+#    nodes.append(Node(nodes[-1],
+#                         PermuteRandom,
+#                         {'seed':k},
+#                         name=F'permute_low_res_{k}'))
 
 # Make the outputs into a vector, then split off 1/4 of the outputs for the
 # fully connected part
@@ -60,15 +60,15 @@ split_node = Node(nodes[-1],
 nodes.append(split_node)
 
 # Fully connected part
-for k in range(12):
-   nodes.append(Node(nodes[-1],
-                        GLOWCouplingBlock,
-                        {'subnet_constructor':subnet_fc, 'clamp':2.0},
-                        name=F'fully_connected_{k}'))
-   nodes.append(Node(nodes[-1],
-                        PermuteRandom,
-                        {'seed':k},
-                        name=F'permute_{k}'))
+for k in range(1):
+    nodes.append(Node(nodes[-1],
+                         GLOWCouplingBlock,
+                         {'subnet_constructor':subnet_fc, 'clamp':2.0},
+                         name=F'fully_connected_{k}'))
+    nodes.append(Node(nodes[-1],
+                         PermuteRandom,
+                         {'seed':k},
+                         name=F'permute_{k}'))
 
 # Concatenate the fully connected part and the skip connection to get a single output
 nodes.append(Node([nodes[-1].out0, split_node.out1],
