@@ -14,12 +14,12 @@ def subnet_fc(c_in, c_out):
                          nn.Linear(256,  c_out))
 
 def subnet_conv(c_in, c_out):
-    return nn.Sequential(nn.Conv2d(c_in, 128,   3, padding=1), nn.ReLU(),
-                         nn.Conv2d(128,  c_out, 3, padding=1))
+    return nn.Sequential(nn.Conv2d(c_in, 16,   3, padding=1), nn.ReLU(),
+                         nn.Conv2d(16,  c_out, 3, padding=1))
 
 def subnet_conv_1x1(c_in, c_out):
-    return nn.Sequential(nn.Conv2d(c_in, 128,   1), nn.ReLU(),
-                         nn.Conv2d(128,  c_out, 1))
+    return nn.Sequential(nn.Conv2d(c_in, 16,   1), nn.ReLU(),
+                         nn.Conv2d(16,  c_out, 1))
 
 # Higher resolution convolutional part
 for k in range(4):
@@ -35,7 +35,7 @@ for k in range(4):
 nodes.append(Node(nodes[-1], IRevNetDownsampling, {}))
 
 # Lower resolution convolutional part
-for k in range(12):
+for k in range(8):
     if k%2 == 0:
         subnet = subnet_conv_1x1
     else:

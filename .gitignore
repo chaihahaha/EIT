@@ -6,6 +6,7 @@ filesList.csv
 **.pkl
 **.torch
 **.tar.gz
+**.log
 EIT_train/checkpoints/*
 EIT_train/checkpoint/*
 EIT_train/.ipynb_checkpoints/*

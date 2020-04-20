@@ -10,7 +10,6 @@ import config as c
 
 import losses
 import model
-import monitoring
 
 def noise_batch(ndim):
     return torch.randn(c.batch_size, ndim).to(c.device)
@@ -87,6 +86,7 @@ def train_epoch(i_epoch, test=False):
         if c.ndim_pad_zy:
             y = torch.cat((c.add_pad_noise * noise_batch(c.ndim_pad_zy), y), dim=1)
         y = torch.cat((noise_batch(c.ndim_z), y), dim=1)
+        cated_y = y
 
         out_y = model.model(x)
 
@@ -112,20 +112,34 @@ def train_epoch(i_epoch, test=False):
     if test:
 
         if c.test_time_functions:
-            out_x = model.model(y, rev=True)
+            out_x = model.model(cated_y, rev=True)
             for f in c.test_time_functions:
-                f(out_x, out_y, x, y)
+                f(out_x, out_y, x, cated_y)
 
         nograd.__exit__(None, None, None)
 
     return np.mean(loss_history, axis=0)
 
 def main():
-    monitoring.restart()
 
     try:
-        monitoring.print_config()
         t_start = time()
+        header = 'Epoch '
+        loss_labels = []
+
+        if c.train_max_likelihood:
+            loss_labels.append('L_ML')
+        if c.train_forward_mmd:
+            loss_labels += ['L_fit', 'L_mmd_fwd']
+        if c.train_backward_mmd:
+            loss_labels.append('L_mmd_back')
+        if c.train_reconstruction:
+            loss_labels.append('L_reconst')
+        loss_labels += [l + '(test)' for l in loss_labels]
+        for l in loss_labels:
+            header += ' %15s' % (l)
+        print(header)
+
         for i_epoch in range(-c.pre_low_lr, c.n_epochs):
 
             if i_epoch < 0:
@@ -134,7 +148,12 @@ def main():
 
             train_losses = train_epoch(i_epoch)
             test_losses  = train_epoch(i_epoch, test=True)
-            monitoring.show_loss(np.concatenate([train_losses, test_losses]))
+            losses = np.concatenate([train_losses, test_losses])
+            print('\r', '    '*20, end='')
+            line = '\r%6.3i' % (i_epoch)
+            for l in losses:
+                line += '  %14.4f' % (l)
+            print(line)
 
             model.scheduler_step()
             if (i_epoch + 1) % c.save_freq == 0:

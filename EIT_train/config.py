@@ -30,11 +30,11 @@ test_time_functions = [save_imgs]
 # Initial learning rate
 lr_init         = 1.0e-3
 #Batch size
-batch_size      = 100
+batch_size      = 10
 # Total number of epochs to train for
 n_epochs        = 600
 # Saving frequency
-save_freq       = 100
+save_freq       = 10
 # End the epoch after this many iterations (or when the train loader is exhausted)
 n_its_per_epoch = 200
 # For the first n epochs, train with a much lower learning rate. This can be
