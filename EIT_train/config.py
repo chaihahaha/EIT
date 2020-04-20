@@ -2,6 +2,11 @@
 import torch
 import numpy as np
 from functools import reduce
+import matplotlib.pyplot as plt
+def save_imgs(out_x, out_y, x, y):
+    for i in range(min(len(out_x),10)):
+        plt.imsave(f"imgs/result{i}.png",out_x[i,0,:,:].cpu().numpy())
+    return
 ######################
 #  General settings  #
 ######################
@@ -11,25 +16,25 @@ filename_out    = 'checkpoints/my_inn.ckpt'
 # Model to load and continue training. Ignored if empty string
 filename_in     = ''
 # Compute device to perform the training on, 'cuda' or 'cpu'
-device          = 'cpu'
+device          = 'cuda'
 # Use interactive visualization of losses and other plots. Requires visdom
 interactive_visualization = False
 # Run a list of python functions at test time after eacch epoch
 # See toy_modes_train.py for reference example
-test_time_functions = []
+test_time_functions = [save_imgs]
 
 #######################
 #  Training schedule  #
 #######################
 
 # Initial learning rate
-lr_init         = 1.0e-4
+lr_init         = 1.0e-3
 #Batch size
-batch_size      = 200
+batch_size      = 1
 # Total number of epochs to train for
-n_epochs        = 60
+n_epochs        = 600
 # Saving frequency
-save_freq       = 4
+save_freq       = 100
 # End the epoch after this many iterations (or when the train loader is exhausted)
 n_its_per_epoch = 200
 # For the first n epochs, train with a much lower learning rate. This can be
@@ -45,13 +50,14 @@ adam_betas = (0.9, 0.95)
 #####################
 #  Data Loader      #
 #####################
-x_data = torch.Tensor(np.load('dataImages.npy'))
+dataset_size = 100
+x_data = torch.Tensor(np.load('dataImages.npy')[:dataset_size])
 x_data = x_data.view(len(x_data),1,*tuple(x_data.shape[1:]))
 x_data = x_data.expand(len(x_data),3,*tuple(x_data.shape[2:]))
 print(x_data.shape)
-y_data = torch.Tensor(np.load('dataBoundary.npy'))
+y_data = torch.Tensor(np.load('dataBoundary.npy')[:dataset_size])
 
-test_split = 1000
+test_split = 10
 x_test = x_data[-test_split:]
 y_test = y_data[-test_split:]
 
@@ -73,7 +79,7 @@ ndim_x      = reduce(lambda x,y: x*y, ndims_x, 1)
 ndim_pad_x  = 0
 
 ndim_y      = y_train.shape[1]
-ndim_z      = 128
+ndim_z      = 1024
 ndim_pad_zy  = ndim_x + ndim_pad_x - ndim_y - ndim_z
 
 
