@@ -10,19 +10,19 @@ import config as c
 nodes = [InputNode(*(c.ndims_x), name='input')]
 ndim_x = c.ndim_x
 def subnet_fc(c_in, c_out):
-    return nn.Sequential(nn.Linear(c_in, 128), nn.ReLU(),
-                         nn.Linear(128,  c_out))
+    return nn.Sequential(nn.Linear(c_in, 256), nn.ReLU(),
+                         nn.Linear(256,  c_out))
 
 def subnet_conv(c_in, c_out):
-    return nn.Sequential(nn.Conv2d(c_in, 64,   3, padding=1), nn.ReLU(),
-                         nn.Conv2d(64,  c_out, 3, padding=1))
+    return nn.Sequential(nn.Conv2d(c_in, 128,   3, padding=1), nn.ReLU(),
+                         nn.Conv2d(128,  c_out, 3, padding=1))
 
 def subnet_conv_1x1(c_in, c_out):
-    return nn.Sequential(nn.Conv2d(c_in, 64,   1), nn.ReLU(),
-                         nn.Conv2d(64,  c_out, 1))
+    return nn.Sequential(nn.Conv2d(c_in, 128,   1), nn.ReLU(),
+                         nn.Conv2d(128,  c_out, 1))
 
 # Higher resolution convolutional part
-for k in range(1):
+for k in range(4):
     nodes.append(Node(nodes[-1],
                          GLOWCouplingBlock,
                          {'subnet_constructor':subnet_conv, 'clamp':1.2},
@@ -35,7 +35,7 @@ for k in range(1):
 nodes.append(Node(nodes[-1], IRevNetDownsampling, {}))
 
 # Lower resolution convolutional part
-for k in range(2):
+for k in range(12):
     if k%2 == 0:
         subnet = subnet_conv_1x1
     else:

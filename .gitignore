@@ -8,6 +8,7 @@ filesList.csv
 **.tar.gz
 EIT_train/checkpoints/*
 EIT_train/checkpoint/*
+EIT_train/.ipynb_checkpoints/*
 /EIT_train/dataBoundary.npy
 /EIT_train/dataImages.npy
 /EIT_train/dataImagesPCA.npy

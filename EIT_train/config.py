@@ -30,7 +30,7 @@ test_time_functions = [save_imgs]
 # Initial learning rate
 lr_init         = 1.0e-3
 #Batch size
-batch_size      = 1
+batch_size      = 100
 # Total number of epochs to train for
 n_epochs        = 600
 # Saving frequency
@@ -50,14 +50,14 @@ adam_betas = (0.9, 0.95)
 #####################
 #  Data Loader      #
 #####################
-dataset_size = 100
+dataset_size = 100000
 x_data = torch.Tensor(np.load('dataImages.npy')[:dataset_size])
 x_data = x_data.view(len(x_data),1,*tuple(x_data.shape[1:]))
 x_data = x_data.expand(len(x_data),3,*tuple(x_data.shape[2:]))
 print(x_data.shape)
 y_data = torch.Tensor(np.load('dataBoundary.npy')[:dataset_size])
 
-test_split = 10
+test_split = 1000
 x_test = x_data[-test_split:]
 y_test = y_data[-test_split:]
 
@@ -79,8 +79,8 @@ ndim_x      = reduce(lambda x,y: x*y, ndims_x, 1)
 ndim_pad_x  = 0
 
 ndim_y      = y_train.shape[1]
-ndim_z      = 1024
-ndim_pad_zy  = ndim_x + ndim_pad_x - ndim_y - ndim_z
+ndim_z      = ndim_x + ndim_pad_x - ndim_y
+ndim_pad_zy  = 0
 
 
 assert (ndim_x + ndim_pad_x
