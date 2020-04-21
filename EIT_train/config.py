@@ -28,9 +28,9 @@ test_time_functions = [save_imgs]
 #######################
 
 # Initial learning rate
-lr_init         = 1.0e-3
+lr_init         = 5e-4
 #Batch size
-batch_size      = 10
+batch_size      = 20
 # Total number of epochs to train for
 n_epochs        = 600
 # Saving frequency
