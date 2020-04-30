@@ -22,7 +22,7 @@ def subnet_conv_1x1(c_in, c_out):
                          nn.Conv2d(16,  c_out, 1))
 
 # Higher resolution convolutional part
-for k in range(4):
+for k in range(2):
     nodes.append(Node(nodes[-1],
                          GLOWCouplingBlock,
                          {'subnet_constructor':subnet_conv, 'clamp':1.2},
@@ -35,7 +35,7 @@ for k in range(4):
 nodes.append(Node(nodes[-1], IRevNetDownsampling, {}))
 
 # Lower resolution convolutional part
-for k in range(8):
+for k in range(4):
     if k%2 == 0:
         subnet = subnet_conv_1x1
     else:

@@ -138,7 +138,7 @@ def main():
         loss_labels += [l + '(test)' for l in loss_labels]
         for l in loss_labels:
             header += ' %15s' % (l)
-        print(header)
+        print(header, flush=True)
 
         for i_epoch in range(-c.pre_low_lr, c.n_epochs):
 
@@ -149,11 +149,11 @@ def main():
             train_losses = train_epoch(i_epoch)
             test_losses  = train_epoch(i_epoch, test=True)
             losses = np.concatenate([train_losses, test_losses])
-            print('\r', '    '*20, end='')
+            print('\r', '    '*20, end='', flush=True)
             line = '\r%6.3i' % (i_epoch)
             for l in losses:
                 line += '  %14.4f' % (l)
-            print(line)
+            print(line,end="\n", flush=True)
 
             model.scheduler_step()
             if (i_epoch + 1) % c.save_freq == 0:
@@ -164,7 +164,7 @@ def main():
         raise
 
     finally:
-        print("\n\nTraining took %f minutes\n\n" % ((time()-t_start)/60.))
+        print("\n\nTraining took %f minutes\n\n" % ((time()-t_start)/60.), flush=True)
         model.save(c.filename_out)
 
 if __name__ == "__main__":

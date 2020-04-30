@@ -14,7 +14,7 @@ def save_imgs(out_x, out_y, x, y):
 # Filename to save the model under
 filename_out    = 'checkpoints/my_inn.ckpt'
 # Model to load and continue training. Ignored if empty string
-filename_in     = ''
+filename_in     = 'checkpoints/my_inn.ckpt'
 # Compute device to perform the training on, 'cuda' or 'cpu'
 device          = 'cuda'
 # Use interactive visualization of losses and other plots. Requires visdom
@@ -28,11 +28,11 @@ test_time_functions = [save_imgs]
 #######################
 
 # Initial learning rate
-lr_init         = 5e-4
+lr_init         = 2e-3
 #Batch size
-batch_size      = 20
+batch_size      = 60
 # Total number of epochs to train for
-n_epochs        = 600
+n_epochs        = 100
 # Saving frequency
 save_freq       = 10
 # End the epoch after this many iterations (or when the train loader is exhausted)
@@ -41,7 +41,7 @@ n_its_per_epoch = 200
 # helpful if the model immediately explodes.
 pre_low_lr      = 0
 # Decay exponentially each epoch, to final_decay*lr_init at the last epoch.
-final_decay     = 0.02
+final_decay     = 0.1
 # L2 weight regularization of model parameters
 l2_weight_reg   = 1e-5
 # Parameters beta1, beta2 of the Adam optimizer
