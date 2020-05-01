@@ -149,11 +149,11 @@ def main():
             train_losses = train_epoch(i_epoch)
             test_losses  = train_epoch(i_epoch, test=True)
             losses = np.concatenate([train_losses, test_losses])
-            print('\r', '    '*20, end='', flush=True)
-            line = '\r%6.3i' % (i_epoch)
+            #print('\r', '    '*20, end='', flush=True)
+            line = '%6.3i' % (i_epoch)
             for l in losses:
                 line += '  %14.4f' % (l)
-            print(line,end="\n", flush=True)
+            print(line, flush=True)
 
             model.scheduler_step()
             if (i_epoch + 1) % c.save_freq == 0:
