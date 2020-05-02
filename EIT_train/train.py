@@ -11,8 +11,9 @@ import config as c
 import losses
 import model
 
-def noise_batch(ndim):
-    return torch.randn(c.batch_size, ndim).to(c.device)
+def noise_batch(ndim, test):
+    bs = c.test_batch_size if test else c.batch_size
+    return torch.randn(bs, ndim).to(c.device)
 
 def loss_max_likelihood(out, y):
     jac = model.model.jacobian(run_forward=False)
@@ -42,11 +43,11 @@ def loss_backward_mmd(x, y):
         MMD *= torch.exp(- 0.5 / c.y_uncertainty_sigma**2 * losses.l2_dist_matrix(y, y))
     return c.lambd_mmd_back * torch.mean(MMD)
 
-def loss_reconstruction(out_y, y, x):
-    cat_inputs = [out_y[:, :c.ndim_z] + c.add_z_noise * noise_batch(c.ndim_z)]
+def loss_reconstruction(out_y, y, x, test):
+    cat_inputs = [out_y[:, :c.ndim_z] + c.add_z_noise * noise_batch(c.ndim_z, test)]
     if c.ndim_pad_zy:
-        cat_inputs.append(out_y[:, c.ndim_z:-c.ndim_y] + c.add_pad_noise * noise_batch(c.ndim_pad_zy))
-    cat_inputs.append(out_y[:, -c.ndim_y:] + c.add_y_noise * noise_batch(c.ndim_y))
+        cat_inputs.append(out_y[:, c.ndim_z:-c.ndim_y] + c.add_pad_noise * noise_batch(c.ndim_pad_zy, test))
+    cat_inputs.append(out_y[:, -c.ndim_y:] + c.add_y_noise * noise_batch(c.ndim_y, test))
 
     x_reconstructed = model.model(torch.cat(cat_inputs, 1), rev=True)
     return c.lambd_reconstruct * losses.l2_fit(x_reconstructed, x)
@@ -79,13 +80,13 @@ def train_epoch(i_epoch, test=False):
         x, y = Variable(x).to(c.device), Variable(y).to(c.device)
 
         if c.add_y_noise > 0:
-            y += c.add_y_noise * noise_batch(c.ndim_y)
+            y += c.add_y_noise * noise_batch(c.ndim_y, test)
 
         if c.ndim_pad_x:
-            x = torch.cat((x, c.add_pad_noise * noise_batch(c.ndim_pad_x)), dim=1)
+            x = torch.cat((x, c.add_pad_noise * noise_batch(c.ndim_pad_x, test)), dim=1)
         if c.ndim_pad_zy:
-            y = torch.cat((c.add_pad_noise * noise_batch(c.ndim_pad_zy), y), dim=1)
-        y = torch.cat((noise_batch(c.ndim_z), y), dim=1)
+            y = torch.cat((c.add_pad_noise * noise_batch(c.ndim_pad_zy, test), y), dim=1)
+        y = torch.cat((noise_batch(c.ndim_z, test), y), dim=1)
         cated_y = y
 
         out_y = model.model(x)
@@ -100,7 +101,7 @@ def train_epoch(i_epoch, test=False):
             batch_losses.append(loss_backward_mmd(x, y))
 
         if c.train_reconstruction:
-            batch_losses.append(loss_reconstruction(out_y, y, x))
+            batch_losses.append(loss_reconstruction(out_y, y, x, test))
 
         l_total = sum(batch_losses)
         loss_history.append([l.item() for l in batch_losses])
