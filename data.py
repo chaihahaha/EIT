@@ -2,8 +2,8 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-path = './data/'
-#path = './Additional_Results/'
+#path = './data/'
+path = './Additional_Results/'
 
 import glob
 images = sorted(glob.glob(path + '*.png'))
@@ -16,20 +16,14 @@ df.to_csv('./filesList.csv')
 
 # Images
 from PIL import Image
-basewidth = 256
-left,upper,right,lower = 725, 75, 1750, 1143 # pour data
-#left,upper,right,lower = 475, 75, 1750, 1300 # pour Adddata
+#left,upper,right,lower = 725, 75, 1750, 1143 # pour data
+left,upper,right,lower = 6, 0, 1231, 1225 # pour Adddata
 import os
 
-img = Image.open(images[0])
-im1 = img.crop((left,upper,right,lower))
-wpercent = (basewidth/float(im1.size[0]))
-hsize = int((float(im1.size[1])*float(wpercent)))
-print (basewidth,hsize)
 im = []
 for filename in images:
     img = Image.open(filename)
-    img1 = img.crop((left,upper,right,lower)).resize((basewidth,hsize), Image.ANTIALIAS).convert('L')
+    img1 = img.crop((left,upper,right,lower)).resize((256,256), Image.ANTIALIAS).convert('L')
     im.append(np.array(img1))
     img.close()
 dataImages=np.array(im)

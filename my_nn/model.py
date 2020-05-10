@@ -25,26 +25,41 @@ class MyModel(nn.Module):
     def __init__(self, y_dim, x_height, x_width):
         super(MyModel, self).__init__()
 
-        hidden_channels = 2
-        hidden_sizes = 256
+        hidden_channels = 16
 
         self.one_d = nn.Sequential(
-                nn.Linear(y_dim, hidden_sizes),
+                nn.Linear(y_dim, y_dim//2),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(hidden_sizes, hidden_channels * x_height * x_width))
-        self.view1 = lambda x: x.view(-1, hidden_channels, x_height, x_width)
+                nn.Linear(y_dim//2, y_dim//4),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(y_dim//4, y_dim//8),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(y_dim//8, y_dim//16),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(y_dim//16, hidden_channels * x_height//16 * x_width//16)
+                )
+        self.view1 = lambda x: x.view(-1, hidden_channels, x_height//16, x_width//16)
 
         self.two_d = nn.Sequential(
-                nn.Conv2d(hidden_channels, 1, 3, 1, 1, bias=True),
+                nn.ConvTranspose2d(hidden_channels, hidden_channels//2, 3, stride=2, padding=1, output_padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(1, 1, 3, 1, 1, bias=True))
+                nn.ConvTranspose2d(hidden_channels//2, hidden_channels//4, 3, stride=2, padding=1, output_padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(hidden_channels//4, hidden_channels//8, 3, stride=2, padding=1, output_padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(hidden_channels//8, hidden_channels//16, 3, stride=2, padding=1, output_padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(1, 1, 3, 1, 1, bias=True),
+                nn.Tanh())
         self.view2 = lambda x: x.view(-1, x_height, x_width)
+        self.scaling = lambda x: (x+1) * 255.0/2.0
 
     def forward(self, y):
-        y = self.one_d(y)
-        out = self.view1(y)
+        out = self.one_d(y)
+        out = self.view1(out)
         out = self.two_d(out)
         out = self.view2(out)
+        out = self.scaling(out)
         return out
 
 
