@@ -21,7 +21,7 @@ test_time_functions = []
 # Initial learning rate
 lr_init         = 1e-3
 #Batch size
-batch_size      = 1
+batch_size      = 5
 # Total number of epochs to train for
 n_epochs        = 100
 # Saving frequency
@@ -42,7 +42,7 @@ adam_betas = (0.9, 0.95)
 #  Data Loader      #
 #####################
 dataset_size = 2000
-x_data = torch.Tensor(np.load('dataImages.npy')[:dataset_size])
+x_data = torch.Tensor(np.load('dataImagesPolar.npy')[:dataset_size])
 _, x_height, x_width = x_data.shape
 print(x_data.shape)
 y_data = torch.Tensor(np.load('dataBoundary.npy')[:dataset_size])

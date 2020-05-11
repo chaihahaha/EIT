@@ -32,11 +32,11 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Linear(y_dim//2, y_dim//4),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(y_dim//4, y_dim//8),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(y_dim//8, y_dim//16),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(y_dim//16, hidden_channels * x_height//16 * x_width//16)
+                #nn.Linear(y_dim//4, y_dim//8),
+                #nn.LeakyReLU(0.2, inplace=True),
+                #nn.Linear(y_dim//8, y_dim//16),
+                #nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(y_dim//4, hidden_channels * x_height//16 * x_width//16)
                 )
         self.view1 = lambda x: x.view(-1, hidden_channels, x_height//16, x_width//16)
 
