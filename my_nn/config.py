@@ -32,7 +32,7 @@ n_its_per_epoch = 100
 # helpful if the model immediately explodes.
 pre_low_lr      = 0
 # Decay exponentially each epoch, to final_decay*lr_init at the last epoch.
-final_decay     = 0.01
+final_decay     = 0.5
 # L2 weight regularization of model parameters
 l2_weight_reg   = 1e-5
 # Parameters beta1, beta2 of the Adam optimizer
@@ -68,7 +68,8 @@ train_loader = torch.utils.data.DataLoader(
 #  Losses  #
 ############
 
-train_forward_l2    = True
+train_forward_l2    = 0.01
+train_forward_mmd    = 0.99
 
 ###########
 #  Model  #

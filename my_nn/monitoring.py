@@ -43,6 +43,8 @@ def restart():
 
     if c.train_forward_l2:
         loss_labels += ['L_l2_fwd']
+    if c.train_forward_mmd:
+        loss_labels += ['L_mmd_fwd']
 
     loss_labels += [l + '(test)' for l in loss_labels]
 

@@ -11,6 +11,9 @@ import model
 def loss_forward_l2(out, x):
     return losses.l2_fit(out, x)
 
+def loss_forward_mmd(out, x):
+    return losses.forward_mmd(out, x)
+
 def train_epoch(i_epoch, test=False):
 
     if not test:
@@ -37,8 +40,10 @@ def train_epoch(i_epoch, test=False):
         x, y = Variable(x).to(c.device), Variable(y).to(c.device)
 
         out = model.model(y)
-        if c.train_forward_l2:
-            batch_losses.append(loss_forward_l2(out, x))
+        if c.train_forward_l2 != 0:
+            batch_losses.append(c.train_forward_l2 * loss_forward_l2(out, x))
+        if c.train_forward_mmd != 0:
+            batch_losses.append(c.train_forward_mmd * loss_forward_mmd(out, x))
 
         l_total = sum(batch_losses)
         loss_history.append([l.item() for l in batch_losses])
