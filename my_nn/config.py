@@ -8,7 +8,7 @@ import numpy as np
 # Filename to save the model under
 filename_out    = 'checkpoints/my_inn.ckpt'
 # Model to load and continue training. Ignored if empty string
-filename_in     = ''
+filename_in     = 'checkpoints/my_inn.ckpt'
 # Compute device to perform the training on, 'cuda' or 'cpu'
 device          = 'cuda'
 
@@ -21,11 +21,11 @@ test_time_functions = []
 # Initial learning rate
 lr_init         = 1e-3
 #Batch size
-batch_size      = 5
+batch_size      = 40
 # Total number of epochs to train for
-n_epochs        = 100
+n_epochs        = 1000
 # Saving frequency
-save_freq       = 1000
+save_freq       = 50
 # End the epoch after this many iterations (or when the train loader is exhausted)
 n_its_per_epoch = 100
 # For the first n epochs, train with a much lower learning rate. This can be
@@ -41,7 +41,7 @@ adam_betas = (0.9, 0.95)
 #####################
 #  Data Loader      #
 #####################
-dataset_size = 2000
+dataset_size = 20000
 x_data = torch.Tensor(np.load('dataImagesPolar.npy')[:dataset_size])
 _, x_height, x_width = x_data.shape
 print(x_data.shape)

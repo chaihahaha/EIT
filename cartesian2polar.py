@@ -6,16 +6,16 @@ def c2p(out_coords):
     theta = theta_idx * 2 * np.pi / w
     dx    = r * np.cos(theta)
     dy    = r * np.sin(theta)
-    x_idx = int((circ_x + dx) * h / original_size)
-    y_idx = int((circ_y + dy) * w / original_size)
+    x_idx = (circ_x + dx) * h / original_size
+    y_idx = (circ_y + dy) * w / original_size
     return (x_idx, y_idx)
 
 imgs = np.load("dataImages.npy")
 imgs_polar = np.zeros_like(imgs)
-c, h, w = imgs.shape
+b, h, w = imgs.shape
 circ_x, circ_y = (614, 618)
 original_size = 1225
-for i in range(c):
+for i in range(b):
     imgs_polar[i] = geometric_transform(imgs[i], c2p)
 #for i in range(c):
 #    for r_idx in range(h):

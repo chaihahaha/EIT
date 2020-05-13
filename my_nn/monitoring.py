@@ -25,10 +25,10 @@ class Visualizer:
 
     def update_losses(self, losses):
         if self.header:
-            print(self.header)
+            print(self.header,flush=True)
             self.header = None
 
-        print('\r', '    '*20, end='')
+        print('\r', '    '*20, end='', flush=True)
         line = '\r%6.3i' % (self.counter)
         for l in losses:
             line += '  %14.4f' % (l)
