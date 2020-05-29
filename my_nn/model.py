@@ -29,40 +29,9 @@ class MyModel(nn.Module):
         hidden_dense = 128
 
         self.linear1 = nn.Sequential(
-                nn.Linear(y_dim, hidden_dense),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(hidden_dense, y_dim*2),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(y_dim*2, y_dim*4),
+                nn.Linear(y_dim, y_dim*4),
                 nn.LeakyReLU(0.2, inplace=True),
                 )
-        self.linear2 = nn.Sequential(
-                nn.Linear(y_dim, hidden_dense),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(hidden_dense, y_dim*2),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(y_dim*2, y_dim*4),
-                nn.LeakyReLU(0.2, inplace=True),
-                )
-        self.sampling = lambda mu, logv: mu + torch.exp(logv/2)
-        #self.view0 = lambda x: x.view(-1,1,y_dim*4)
-        #self.one_d = nn.Sequential(
-        #        nn.Conv1d(1, 2, 3, padding=1),
-        #        nn.LeakyReLU(0.2, inplace=True),
-        #        nn.Conv1d(2, 4, 3, padding=1),
-        #        nn.LeakyReLU(0.2, inplace=True),
-        #        nn.Conv1d(4, 8, 3, padding=1),
-        #        nn.LeakyReLU(0.2, inplace=True),
-        #        nn.Conv1d(8, 8, 3, padding=1),
-        #        nn.LeakyReLU(0.2, inplace=True),
-        #        nn.Conv1d(8, 4, 3, padding=1),
-        #        nn.LeakyReLU(0.2, inplace=True),
-        #        nn.Conv1d(4, 2, 3, padding=1),
-        #        nn.LeakyReLU(0.2, inplace=True),
-        #        nn.Conv1d(2, 1, 3, padding=1),
-        #        nn.LeakyReLU(0.2, inplace=True),
-        #        )
-        #self.view = lambda x: x.view(-1,y_dim*4)
         self.dense = nn.Sequential(
                 nn.Linear(y_dim*4, hidden_channels * x_height//16 * x_width//16),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -117,12 +86,7 @@ class MyModel(nn.Module):
         self.scaling = lambda x: (x+1) * 255.0/2.0
 
     def forward(self, y):
-        out1 = self.linear1(y)
-        out2 = self.linear2(y)
-        out = self.sampling(out1, out2)
-        #out = self.view0(out)
-        #out = self.one_d(out)
-        #out = self.view(out)
+        out = self.linear1(y)
         out = self.dense(out)
         out = self.view1(out)
         out = self.two_d(out)

@@ -8,6 +8,8 @@ import losses
 import model
 import torch
 import matplotlib.pyplot as plt
+from skimage.metrics import structural_similarity
+
 circ_x, circ_y = (614, 618)
 original_size = 1225
 h,w = 256,256
@@ -40,8 +42,9 @@ for i in range(n_samples):
     xi  = x[i].cpu().numpy()
     oxi = geometric_transform(oxi, p2c)
     xi = geometric_transform(xi, p2c)
+    ssim = structural_similarity(oxi, xi, data_range=255)
     ax[0].imshow(oxi)
-    ax[0].set_title("recovered img")
+    ax[0].set_title(f"recovered img(SSIM: {ssim})")
     ax[1].imshow(xi)
     ax[1].set_title("original img")
     fig.savefig(f"imgs/result{i}.png")
