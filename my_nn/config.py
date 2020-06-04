@@ -41,30 +41,10 @@ adam_betas = (0.9, 0.95)
 #####################
 #  Data Loader      #
 #####################
-dataset_size = 20000
-x_data = torch.Tensor(np.load('dataImagesPolar.npy')[:dataset_size])
-_, x_height, x_width = x_data.shape
-print(x_data.shape)
-y_data = torch.Tensor(np.load('dataBoundary.npy')[:dataset_size])
-_, y_dim = y_data.shape
-
-test_split = 100
-x_test = x_data[-test_split:]
-y_test = y_data[-test_split:]
-
-x_train = x_data[:-test_split]
-y_train = y_data[:-test_split]
-test_batch_size = min(batch_size, test_split)
-
-test_loader = torch.utils.data.DataLoader(
-  torch.utils.data.TensorDataset(x_test, y_test),
-  batch_size=test_batch_size, shuffle=False, drop_last=True)
-
-train_loader = torch.utils.data.DataLoader(
-    torch.utils.data.TensorDataset(x_train, y_train),
-    batch_size=batch_size, shuffle=True, drop_last=True)
-
-############
+y_dim = 256
+x_height = 256
+x_width = 256
+###########
 #  Losses  #
 ############
 
