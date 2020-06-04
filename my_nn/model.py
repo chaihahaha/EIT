@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim
 from torch.autograd import Variable
+import torch.nn.functional as F
 import config as c
 def optim_step():
     #for p in params_trainable:
@@ -84,12 +85,27 @@ class MyModel(nn.Module):
                 nn.Tanh())
         self.view2 = lambda x: x.view(-1, x_height, x_width)
         self.scaling = lambda x: (x+1) * 255.0/2.0
+        self.fc_loc = nn.Sequential(
+                nn.Linear(y_dim, 512),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(512, 1024),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(1024, 512),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(512, 3*2)
+        )
+    def stn(self, y, img):
+        theta = self.fc_loc(y).view(-1,2,3)
+        grid = F.affine_grid(theta, img.size())
+        img = F.grid_sample(img, grid)
+        return img
 
     def forward(self, y):
         out = self.linear1(y)
         out = self.dense(out)
         out = self.view1(out)
         out = self.two_d(out)
+        out = self.stn(y, out)
         out = self.view2(out)
         out = self.scaling(out)
         return out
@@ -101,6 +117,8 @@ model.to(c.device)
 params_trainable = list(filter(lambda p: p.requires_grad, model.parameters()))
 for p in params_trainable:
     p.data = c.init_scale * torch.randn(p.data.shape).to(c.device)
+model.fc_loc[6].weight.data.zero_()
+model.fc_loc[6].bias.data.copy_(torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float))
 
 gamma = (c.final_decay)**(1./c.n_epochs)
 optim = torch.optim.Adam(params_trainable, lr=c.lr_init, betas=c.adam_betas, eps=1e-6, weight_decay=c.l2_weight_reg)

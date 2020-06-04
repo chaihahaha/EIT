@@ -13,7 +13,7 @@ filename_out    = ckpt_dir + ckpt_name
 if not os.path.exists(ckpt_dir):
     os.makedirs(ckpt_dir)
 # Model to load and continue training. Ignored if empty string
-filename_in     = ''
+filename_in     = filename_out
 # Compute device to perform the training on, 'cuda' or 'cpu'
 device          = 'cuda'
 
