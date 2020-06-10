@@ -35,13 +35,15 @@ for x, y in loader:
 x, y = x[:n_samples], y[:n_samples]
 x, y = Variable(x).to(c.device), Variable(y).to(c.device)
 
+print(torch.mean(model.model.fc_loc[6].weight.data))
+print(torch.mean(model.model.fc_loc[6].bias.data))
 out_x = model.model(y)
 for i in range(n_samples):
     fig, ax = plt.subplots(1,2)
     oxi = out_x[i].cpu().numpy()
     xi  = x[i].cpu().numpy()
-    oxi = geometric_transform(oxi, p2c)
-    xi = geometric_transform(xi, p2c)
+   # oxi = geometric_transform(oxi, p2c)
+   # xi = geometric_transform(xi, p2c)
     ssim = structural_similarity(oxi, xi, data_range=255)
     ax[0].imshow(oxi)
     ax[0].set_title(f"recovered img(SSIM: {ssim})")

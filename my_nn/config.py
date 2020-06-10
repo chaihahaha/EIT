@@ -13,7 +13,7 @@ filename_out    = ckpt_dir + ckpt_name
 if not os.path.exists(ckpt_dir):
     os.makedirs(ckpt_dir)
 # Model to load and continue training. Ignored if empty string
-filename_in     = filename_out
+filename_in     = ''
 # Compute device to perform the training on, 'cuda' or 'cpu'
 device          = 'cuda'
 
@@ -47,7 +47,7 @@ adam_betas = (0.9, 0.95)
 #  Data Loader      #
 #####################
 dataset_size = 20000
-x_data = torch.Tensor(np.load('dataImagesPolar.npy')[:dataset_size])
+x_data = torch.Tensor(np.load('dataImages.npy')[:dataset_size])
 _, x_height, x_width = x_data.shape
 print(x_data.shape)
 y_data = torch.Tensor(np.load('dataBoundary.npy')[:dataset_size])

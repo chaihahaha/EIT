@@ -30,9 +30,21 @@ class MyModel(nn.Module):
         hidden_dense = 128
 
         self.linear1 = nn.Sequential(
-                nn.Linear(y_dim, y_dim*4),
+                nn.Linear(y_dim*4, y_dim*4),
                 nn.LeakyReLU(0.2, inplace=True),
                 )
+        self.one_d_conv1 = nn.Sequential(
+                nn.Conv1d(1, 1, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True)
+                ) 
+        self.one_d_conv2 = nn.Sequential(
+                nn.Conv1d(2, 2, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True)
+                ) 
+        self.one_d_conv3 = nn.Sequential(
+                nn.Conv1d(3, 4, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True)
+                ) 
         self.dense = nn.Sequential(
                 nn.Linear(y_dim*4, hidden_channels * x_height//16 * x_width//16),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -100,12 +112,24 @@ class MyModel(nn.Module):
         img = F.grid_sample(img, grid)
         return img
 
+    def conv1d(self, y):
+        y = y.view(-1, 1, c.y_dim)
+        expy = torch.exp(y)
+        fracy = torch.reciprocal(y)
+        y = self.one_d_conv1(y)
+        y = torch.cat([y,fracy],1)
+        y = self.one_d_conv2(y)
+        y = torch.cat([y,expy],1)
+        y = self.one_d_conv3(y)
+        return y.view(-1, c.y_dim * 4)
+        
     def forward(self, y):
+        y = self.conv1d(y)
         out = self.linear1(y)
         out = self.dense(out)
         out = self.view1(out)
         out = self.two_d(out)
-        out = self.stn(y, out)
+        #out = self.stn(y, out)
         out = self.view2(out)
         out = self.scaling(out)
         return out
