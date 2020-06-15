@@ -1,6 +1,10 @@
 data/*
 Additional_Results/*
+train_data/*
+test_data/*
+supervisor_data/*
 filesList.csv
+**.zip
 **.png
 **.pyc
 **.pkl
