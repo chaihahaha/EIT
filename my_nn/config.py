@@ -47,19 +47,16 @@ adam_betas = (0.9, 0.95)
 #  Data Loader      #
 #####################
 dataset_size = 20000
-x_data = torch.Tensor(np.load('dataImages.npy')[:dataset_size])
-_, x_height, x_width = x_data.shape
-print(x_data.shape)
-y_data = torch.Tensor(np.load('dataBoundary.npy')[:dataset_size])
-_, y_dim = y_data.shape
+x_train = torch.Tensor(np.load('trainImages.npy'))
+_, x_height, x_width = x_train.shape
+print(x_train.shape)
+y_train = torch.Tensor(np.load('trainBoundary.npy'))
+_, y_dim = y_train.shape
 
-test_split = 100
-x_test = x_data[-test_split:]
-y_test = y_data[-test_split:]
+x_test = torch.Tensor(np.load('testImages.npy'))
+y_test = torch.Tensor(np.load('testBoundary.npy'))
 
-x_train = x_data[:-test_split]
-y_train = y_data[:-test_split]
-test_batch_size = min(batch_size, test_split)
+test_batch_size = 49
 
 test_loader = torch.utils.data.DataLoader(
   torch.utils.data.TensorDataset(x_test, y_test),

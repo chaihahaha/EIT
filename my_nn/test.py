@@ -1,12 +1,13 @@
 from time import time
+import torch
 from torch.autograd import Variable
 import config as c
+c.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from scipy.ndimage import geometric_transform
 import numpy as np
 
 import losses
 import model
-import torch
 import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity
 
@@ -23,8 +24,7 @@ def p2c(out_coords):
     theta_idx   = theta * w / (2 * np.pi)
     return (r_idx, theta_idx)
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-n_samples = 10
+n_samples = 49
 model.load("checkpoints/my_inn.ckpt")
 model.model.eval()
 loader = c.test_loader

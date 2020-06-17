@@ -34,15 +34,15 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True),
                 )
         self.one_d_conv1 = nn.Sequential(
-                nn.Conv1d(1, 1, 3, padding=1),
+                nn.Conv1d(3, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.one_d_conv2 = nn.Sequential(
-                nn.Conv1d(2, 2, 3, padding=1),
+                nn.Conv1d(4, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.one_d_conv3 = nn.Sequential(
-                nn.Conv1d(3, 4, 3, padding=1),
+                nn.Conv1d(4, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.dense = nn.Sequential(
@@ -107,7 +107,8 @@ class MyModel(nn.Module):
                 nn.Linear(512, 3*2)
         )
     def stn(self, y, img):
-        theta = self.fc_loc(y).view(-1,2,3)
+        fc = self.fc_loc(y)
+        theta = fc.view(-1,2,3)
         grid = F.affine_grid(theta, img.size())
         img = F.grid_sample(img, grid)
         return img
@@ -116,20 +117,19 @@ class MyModel(nn.Module):
         y = y.view(-1, 1, c.y_dim)
         expy = torch.exp(y)
         fracy = torch.reciprocal(y)
+        y = torch.cat([y,fracy,expy],1)
         y = self.one_d_conv1(y)
-        y = torch.cat([y,fracy],1)
         y = self.one_d_conv2(y)
-        y = torch.cat([y,expy],1)
         y = self.one_d_conv3(y)
         return y.view(-1, c.y_dim * 4)
         
     def forward(self, y):
-        y = self.conv1d(y)
-        out = self.linear1(y)
+        y_conv = self.conv1d(y)
+        out = self.linear1(y_conv)
         out = self.dense(out)
         out = self.view1(out)
+        #out = self.stn(y, out) # stn will worsen prediction
         out = self.two_d(out)
-        #out = self.stn(y, out)
         out = self.view2(out)
         out = self.scaling(out)
         return out
