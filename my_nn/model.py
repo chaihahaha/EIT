@@ -59,18 +59,10 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//2, hidden_channels//2, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(hidden_channels//2, hidden_channels//2, 3, 1, 1, bias=True),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(hidden_channels//2, hidden_channels//2, 3, 1, 1, bias=True),
-                nn.LeakyReLU(0.2, inplace=True),
 
                 nn.ConvTranspose2d(hidden_channels//2, hidden_channels//4, 3, stride=2, padding=1, output_padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
 
-                nn.Conv2d(hidden_channels//4, hidden_channels//4, 3, 1, 1, bias=True),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(hidden_channels//4, hidden_channels//4, 3, 1, 1, bias=True),
-                nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//4, hidden_channels//4, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//4, hidden_channels//4, 3, 1, 1, bias=True),
@@ -83,15 +75,25 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//8, hidden_channels//8, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(hidden_channels//8, hidden_channels//8, 3, 1, 1, bias=True),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(hidden_channels//8, hidden_channels//8, 3, 1, 1, bias=True),
-                nn.LeakyReLU(0.2, inplace=True),
 
                 nn.ConvTranspose2d(hidden_channels//8, hidden_channels//16, 3, stride=2, padding=1, output_padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
+                nn.MaxPool2d(3, stride=2, padding=1),
 
-                nn.Conv2d(hidden_channels//16, 1, 3, 1, 1, bias=True),
+                nn.Conv2d(hidden_channels//16, hidden_channels//16, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//16, hidden_channels//16, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+
+                nn.ConvTranspose2d(hidden_channels//16, hidden_channels//32, 3, stride=2, padding=1, output_padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+
+                nn.Conv2d(hidden_channels//32, hidden_channels//32, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//32, hidden_channels//32, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+
+                nn.Conv2d(hidden_channels//32, 1, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
 
                 nn.Tanh())
