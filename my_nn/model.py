@@ -30,7 +30,7 @@ class MyModel(nn.Module):
         hidden_dense = 128
 
         self.linear1 = nn.Sequential(
-                nn.Linear(y_dim*4, y_dim*4),
+                nn.Linear(y_dim*16, y_dim*4),
                 nn.LeakyReLU(0.2, inplace=True),
                 )
         self.one_d_conv1 = nn.Sequential(
@@ -38,11 +38,11 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.one_d_conv2 = nn.Sequential(
-                nn.Conv1d(4, 4, 3, padding=1),
+                nn.Conv1d(4, 8, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.one_d_conv3 = nn.Sequential(
-                nn.Conv1d(4, 4, 3, padding=1),
+                nn.Conv1d(8, 16, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.dense = nn.Sequential(
@@ -123,7 +123,7 @@ class MyModel(nn.Module):
         y = self.one_d_conv1(y)
         y = self.one_d_conv2(y)
         y = self.one_d_conv3(y)
-        return y.view(-1, c.y_dim * 4)
+        return y.view(-1, c.y_dim * 16)
         
     def forward(self, y):
         y_conv = self.conv1d(y)
