@@ -30,23 +30,33 @@ class MyModel(nn.Module):
         hidden_dense = 128
 
         self.linear1 = nn.Sequential(
-                nn.Linear(y_dim*16, y_dim*4),
+                nn.Linear(y_dim*16, y_dim),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(y_dim, y_dim*4),
                 nn.LeakyReLU(0.2, inplace=True),
                 )
         self.one_d_conv1 = nn.Sequential(
                 nn.Conv1d(3, 4, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv1d(4, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.one_d_conv2 = nn.Sequential(
                 nn.Conv1d(4, 8, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv1d(8, 8, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.one_d_conv3 = nn.Sequential(
                 nn.Conv1d(8, 16, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv1d(16, 16, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
         self.dense = nn.Sequential(
-                nn.Linear(y_dim*4, hidden_channels * x_height//16 * x_width//16),
+                nn.Linear(y_dim*4, y_dim),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(y_dim, hidden_channels * x_height//16 * x_width//16),
                 nn.LeakyReLU(0.2, inplace=True),
                 )
         self.view1 = lambda x: x.view(-1, hidden_channels, x_height//16, x_width//16)
@@ -59,6 +69,10 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//2, hidden_channels//2, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//2, hidden_channels//2, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//2, hidden_channels//2, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
 
                 nn.ConvTranspose2d(hidden_channels//2, hidden_channels//4, 3, stride=2, padding=1, output_padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -67,10 +81,18 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//4, hidden_channels//4, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//4, hidden_channels//4, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//4, hidden_channels//4, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
 
                 nn.ConvTranspose2d(hidden_channels//4, hidden_channels//8, 3, stride=2, padding=1, output_padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
 
+                nn.Conv2d(hidden_channels//8, hidden_channels//8, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//8, hidden_channels//8, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//8, hidden_channels//8, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//8, hidden_channels//8, 3, 1, 1, bias=True),
@@ -84,10 +106,18 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//16, hidden_channels//16, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//16, hidden_channels//16, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//16, hidden_channels//16, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
 
                 nn.ConvTranspose2d(hidden_channels//16, hidden_channels//32, 3, stride=2, padding=1, output_padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
 
+                nn.Conv2d(hidden_channels//32, hidden_channels//32, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(hidden_channels//32, hidden_channels//32, 3, 1, 1, bias=True),
+                nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//32, hidden_channels//32, 3, 1, 1, bias=True),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(hidden_channels//32, hidden_channels//32, 3, 1, 1, bias=True),

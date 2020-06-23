@@ -46,7 +46,6 @@ adam_betas = (0.9, 0.95)
 #####################
 #  Data Loader      #
 #####################
-dataset_size = 20000
 x_train = torch.Tensor(np.load('trainImages.npy'))
 _, x_height, x_width = x_train.shape
 print(x_train.shape)
