@@ -26,15 +26,9 @@ class MyModel(nn.Module):
     def __init__(self, y_dim, x_height, x_width):
         super(MyModel, self).__init__()
 
+        self.y_dim = y_dim
         hidden_channels = 128
-        hidden_dense = 128
 
-        self.linear1 = nn.Sequential(
-                nn.Linear(y_dim*16, y_dim),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(y_dim, y_dim*4),
-                nn.LeakyReLU(0.2, inplace=True),
-                )
         self.one_d_conv1 = nn.Sequential(
                 nn.Conv1d(3, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -53,6 +47,13 @@ class MyModel(nn.Module):
                 nn.Conv1d(16, 16, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
+
+        self.linear1 = nn.Sequential(
+                nn.Linear(y_dim*16, y_dim),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Linear(y_dim, y_dim*4),
+                nn.LeakyReLU(0.2, inplace=True),
+                )
         self.dense = nn.Sequential(
                 nn.Linear(y_dim*4, y_dim),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -129,21 +130,6 @@ class MyModel(nn.Module):
                 nn.Tanh())
         self.view2 = lambda x: x.view(-1, x_height, x_width)
         self.scaling = lambda x: (x+1) * 255.0/2.0
-        self.fc_loc = nn.Sequential(
-                nn.Linear(y_dim, 512),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(512, 1024),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(1024, 512),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(512, 3*2)
-        )
-    def stn(self, y, img):
-        fc = self.fc_loc(y)
-        theta = fc.view(-1,2,3)
-        grid = F.affine_grid(theta, img.size())
-        img = F.grid_sample(img, grid)
-        return img
 
     def conv1d(self, y):
         y = y.view(-1, 1, c.y_dim)
@@ -154,15 +140,23 @@ class MyModel(nn.Module):
         y = self.one_d_conv2(y)
         y = self.one_d_conv3(y)
         return y.view(-1, c.y_dim * 16)
-        
-    def forward(self, y):
-        y_conv = self.conv1d(y)
+
+    def fully_conn(self, y_conv):
         out = self.linear1(y_conv)
         out = self.dense(out)
         out = self.view1(out)
-        #out = self.stn(y, out) # stn will worsen prediction
-        out = self.two_d(out)
+        return out
+
+    def conv2d(self, y):
+        out = self.two_d(y)
         out = self.view2(out)
+        return out
+
+        
+    def forward(self, y):
+        y_conv = self.conv1d(y)
+        out = self.fully_conn(y_conv)
+        out = self.conv2d(out)
         out = self.scaling(out)
         return out
 
@@ -173,8 +167,6 @@ model.to(c.device)
 params_trainable = list(filter(lambda p: p.requires_grad, model.parameters()))
 for p in params_trainable:
     p.data = c.init_scale * torch.randn(p.data.shape).to(c.device)
-model.fc_loc[6].weight.data.zero_()
-model.fc_loc[6].bias.data.copy_(torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float))
 
 gamma = (c.final_decay)**(1./c.n_epochs)
 optim = torch.optim.Adam(params_trainable, lr=c.lr_init, betas=c.adam_betas, eps=1e-6, weight_decay=c.l2_weight_reg)
