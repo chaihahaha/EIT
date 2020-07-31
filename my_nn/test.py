@@ -1,16 +1,14 @@
 from time import time
-import torch
 from torch.autograd import Variable
-import config as c
-c.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from scipy.ndimage import geometric_transform
+from skimage.metrics import structural_similarity
 import numpy as np
 
 import losses
 import model
+import torch
 import matplotlib.pyplot as plt
-from skimage.metrics import structural_similarity
-
+import glob
 circ_x, circ_y = (614, 618)
 original_size = 1225
 h,w = 256,256
@@ -24,30 +22,71 @@ def p2c(out_coords):
     theta_idx   = theta * w / (2 * np.pi)
     return (r_idx, theta_idx)
 
-n_samples = 49
+def dice_loss(x1, x2):
+    numerator = 2 * np.sum(x1 * x2)
+    denominator = np.sum(x1+x2)
+    return 1-(numerator + 1)/(denominator + 1)
+
+def total_var(x1, x2):
+    return np.sum(np.abs(x1-x2))
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.load("checkpoints/my_inn.ckpt")
 model.model.eval()
-loader = c.test_loader
 nograd = torch.no_grad()
 nograd.__enter__()
-for x, y in loader:
-    break
-x, y = x[:n_samples], y[:n_samples]
-x, y = Variable(x).to(c.device), Variable(y).to(c.device)
+#txt = sorted(glob.glob('test_y/' + '*.txt'))
+#
+#for filename  in txt:
+#    y = np.array([x.split(' ')[0] for x in open(filename).readlines()])
+#    y = y.astype(np.float)[np.newaxis,:]
+#    y = torch.from_numpy(y).float()
+#    print(y.dtype)
+#    y = Variable(y).to("cuda")
+#    out_x = model.model(y).squeeze()
+#    fig, ax = plt.subplots(1,1)
+#    oxi = out_x.cpu().numpy()
+#    oxi = geometric_transform(oxi, p2c)
+#    ax.imshow(oxi)
+#    ax.axis('off')
+#    fig.savefig(f"imgs/{filename}.png", bbox_inches='tight')
+#    fig.clf()
 
-print(torch.mean(model.model.fc_loc[6].weight.data))
-print(torch.mean(model.model.fc_loc[6].bias.data))
+y_test = torch.Tensor(np.load('testBoundary.npy'))
+x_test = np.load('testImages.npy')
+with open('filesList.csv','r') as f:
+    s = f.read()
+y_test_name = [i.split("\\")[-1] for i in s.split("\n") if i][1:]
+y = Variable(y_test).to("cuda")
 out_x = model.model(y)
-for i in range(n_samples):
+for i in range(len(y_test)):
+    fig, ax = plt.subplots(1,1)
+    oxi = out_x[i].cpu().numpy()
+    #oxi = geometric_transform(oxi, p2c)
+    ax.imshow(oxi)
+    ax.axis('off')
+    fig.savefig(f"imgs/{y_test_name[i]}.png", bbox_inches='tight')
+    plt.close()
+
+    fig, ax = plt.subplots(1,1)
+    oxi = x_test[i]
+    ax.imshow(oxi)
+    ax.axis('off')
+    fig.savefig(f"gts/{y_test_name[i]}.png", bbox_inches='tight')
+    plt.close()
+
     fig, ax = plt.subplots(1,2)
     oxi = out_x[i].cpu().numpy()
-    xi  = x[i].cpu().numpy()
-   # oxi = geometric_transform(oxi, p2c)
-   # xi = geometric_transform(xi, p2c)
-    ssim = structural_similarity(oxi, xi, data_range=255)
+    gtxi = x_test[i]
+    ssim = structural_similarity(oxi, gtxi, data_range=255)
+    dice = dice_loss(oxi/255.0, gtxi/255.0)
+    l2   = np.sum((oxi-gtxi)**2)
+    ttv  = total_var(oxi, gtxi)
+    
     ax[0].imshow(oxi)
-    ax[0].set_title(f"recovered img(SSIM: {ssim})")
-    ax[1].imshow(xi)
-    ax[1].set_title("original img")
-    fig.savefig(f"imgs/result{i}.png")
-    fig.clf()
+    ax[0].set_title("recovered image")
+    ax[1].imshow(gtxi)
+    ax[1].set_title("ground truth")
+    fig.suptitle("SSIM: {:.3e} Dice loss: {:.3e} \nL2 loss: {:.3e} total variation: {:.3e}".format(ssim, dice, l2, ttv))
+    fig.savefig(f"cmps/{y_test_name[i]}.png", bbox_inches='tight')
+    plt.close()
