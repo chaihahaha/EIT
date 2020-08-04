@@ -30,7 +30,7 @@ class MyModel(nn.Module):
         hidden_channels = 128
 
         self.one_d_conv1 = nn.Sequential(
-                nn.Conv1d(3, 4, 3, padding=1),
+                nn.Conv1d(1, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv1d(4, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
@@ -48,13 +48,13 @@ class MyModel(nn.Module):
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
 
-        self.linear1 = nn.Sequential(
+        self.dense1 = nn.Sequential(
                 nn.Linear(y_dim*16, y_dim),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Linear(y_dim, y_dim*4),
                 nn.LeakyReLU(0.2, inplace=True),
                 )
-        self.dense = nn.Sequential(
+        self.dense2 = nn.Sequential(
                 nn.Linear(y_dim*4, y_dim),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Linear(y_dim, hidden_channels * x_height//16 * x_width//16),
@@ -133,17 +133,17 @@ class MyModel(nn.Module):
 
     def conv1d(self, y):
         y = y.view(-1, 1, c.y_dim)
-        expy = torch.exp(y)
-        fracy = torch.reciprocal(y)
-        y = torch.cat([y,fracy,expy],1)
-        y = self.one_d_conv1(y)
-        y = self.one_d_conv2(y)
-        y = self.one_d_conv3(y)
-        return y.view(-1, c.y_dim * 16)
+        #expy = torch.exp(y)
+        #fracy = torch.reciprocal(y)
+        #y = torch.cat([y,fracy,expy],1)
+        y1 = self.one_d_conv1(y)
+        y2 = self.one_d_conv2(y1)
+        y3 = self.one_d_conv3(y2)
+        return y3.view(-1, c.y_dim * 16)
 
     def fully_conn(self, y_conv):
-        out = self.linear1(y_conv)
-        out = self.dense(out)
+        out = self.dense1(y_conv)
+        out = self.dense2(out)
         out = self.view1(out)
         return out
 

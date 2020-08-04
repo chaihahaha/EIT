@@ -32,6 +32,8 @@ def total_var(x1, x2):
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.load("checkpoints/my_inn.ckpt")
+n_params = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
+print("# of params:", n_params)
 model.model.eval()
 nograd = torch.no_grad()
 nograd.__enter__()
