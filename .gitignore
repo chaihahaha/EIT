@@ -4,6 +4,7 @@ train_data/*
 test_data/*
 supervisor_data/*
 filesList.csv
+**.csv
 **.zip
 **.png
 **.pyc

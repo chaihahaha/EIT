@@ -1,82 +1,110 @@
 from time import time
 from torch.autograd import Variable
-
-from FrEIA.framework import *
-from FrEIA.modules import *
-
-import config as c
+from scipy.ndimage import geometric_transform
+from skimage.metrics import structural_similarity
+import numpy as np
 
 import losses
 import model
 import torch
 import matplotlib.pyplot as plt
+import glob
+circ_x, circ_y = (614, 618)
+original_size = 1225
+h,w = 256,256
+def noise_batch(n, ndim):
+    return torch.randn(n, ndim).to('cuda')
+def p2c(out_coords):
+    x_idx, y_idx = out_coords[0], out_coords[1]
+    dx          = x_idx * original_size / h - circ_x
+    dy          = y_idx * original_size / w - circ_y
+    r           = np.sqrt(dx**2 + dy**2)
+    theta       = (np.arctan2(dy,dx)+np.pi*2)%(np.pi*2)
+    r_idx       = r * h /600.0
+    theta_idx   = theta * w / (2 * np.pi)
+    return (r_idx, theta_idx)
+
+def dice_loss(x1, x2):
+    numerator = 2 * np.sum(x1 * x2)
+    denominator = np.sum(x1+x2)
+    return 1-(numerator + 1)/(denominator + 1)
+
+def total_var(x1, x2):
+    return np.mean(np.abs(x1-x2))
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-def noise_batch(ndim):
-    return torch.randn(c.batch_size, ndim).to(c.device)
-
-def loss_max_likelihood(out, y):
-    jac = model.model.jacobian(run_forward=False)
-
-    neg_log_likeli = ( 0.5 / c.y_uncertainty_sigma**2 * torch.sum((out[:, -ndim_y:]       - y[:, -ndim_y:])**2, 1)
-                     + 0.5 / c.zeros_noise_scale**2   * torch.sum((out[:, ndim_z:-ndim_y] - y[:, ndim_z:-ndim_y])**2, 1)
-                     + 0.5 * torch.sum(out[:, :ndim_z]**2, 1)
-                     - jac)
-
-    return c.lambd_max_likelihood * torch.mean(neg_log_likeli)
-
-def loss_forward_mmd(out, y):
-    # Shorten output, and remove gradients wrt y, for latent loss
-    output_block_grad = torch.cat((out[:, :c.ndim_z],
-                                   out[:, -c.ndim_y:].data), dim=1)
-    y_short = torch.cat((y[:, :c.ndim_z], y[:, -c.ndim_y:]), dim=1)
-
-    l_forw_fit = c.lambd_fit_forw * losses.l2_fit(out[:, c.ndim_z:], y[:, c.ndim_z:])
-    l_forw_mmd = c.lambd_mmd_forw  * torch.mean(losses.forward_mmd(output_block_grad, y_short))
-
-    return l_forw_fit, l_forw_mmd
-
-def loss_backward_mmd(x, y):
-    x_samples = model.model(y, rev=True)
-    MMD = losses.backward_mmd(x, x_samples)
-    if c.mmd_back_weighted:
-        MMD *= torch.exp(- 0.5 / c.y_uncertainty_sigma**2 * losses.l2_dist_matrix(y, y))
-    return c.lambd_mmd_back * torch.mean(MMD)
-
-def loss_reconstruction(out_y, y, x):
-    cat_inputs = [out_y[:, :c.ndim_z] + c.add_z_noise * noise_batch(c.ndim_z)]
-    if c.ndim_pad_zy:
-        cat_inputs.append(out_y[:, c.ndim_z:-c.ndim_y] + c.add_pad_noise * noise_batch(c.ndim_pad_zy))
-    cat_inputs.append(out_y[:, -c.ndim_y:] + c.add_y_noise * noise_batch(c.ndim_y))
-
-    x_reconstructed = model.model(torch.cat(cat_inputs, 1), rev=True)
-    return c.lambd_reconstruct * losses.l2_fit(x_reconstructed, x)
-
-n_samples = 10
 model.load("checkpoints/my_inn.ckpt")
+n_params = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
+print("# of params:", n_params)
 model.model.eval()
-loader = c.train_loader
 nograd = torch.no_grad()
 nograd.__enter__()
-for x, y in loader:
-    break
-x, y = x[:n_samples], y[:n_samples]
-x, y = Variable(x).to(c.device), Variable(y).to(c.device)
-if c.add_y_noise > 0:
-        y += c.add_y_noise * noise_batch(c.ndim_y)[:n_samples]
-if c.ndim_pad_x:
-    x = torch.cat((x, c.add_pad_noise * noise_batch(c.ndim_pad_x)[:n_samples]), dim=1)
-if c.ndim_pad_zy:
-    y = torch.cat((c.add_pad_noise * noise_batch(c.ndim_pad_zy)[:n_samples], y), dim=1)
-y = torch.cat((noise_batch(c.ndim_z)[:n_samples], y), dim=1)
 
-out_x = model.model(y, rev=True)
-for i in range(n_samples):
+y_test = torch.Tensor(np.load('testBoundary.npy'))
+x_test = np.load('testImages.npy')
+with open('filesList.csv','r') as f:
+    s = f.read()
+y_test_name = [i.split("\\")[-1] for i in s.split("\n") if i][1:]
+y = Variable(y_test).to("cuda")
+y = torch.cat((noise_batch(len(y),256*256-256), y), dim=1)
+out_x = model.model(y, rev=True).view((-1,256,256))
+metrics = []
+for i in range(len(y_test)):
+    fig, ax = plt.subplots(1,1)
+    oxi = out_x[i].cpu().numpy()
+    #oxi = geometric_transform(oxi, p2c)
+    ax.imshow(oxi)
+    ax.axis('off')
+    fig.savefig(f"imgs/{y_test_name[i]}.png", bbox_inches='tight')
+    plt.close()
+
+    fig, ax = plt.subplots(1,1)
+    oxi = x_test[i]
+    ax.imshow(oxi)
+    ax.axis('off')
+    fig.savefig(f"gts/{y_test_name[i]}.png", bbox_inches='tight')
+    plt.close()
+
     fig, ax = plt.subplots(1,2)
-    ax[0].imshow(out_x[i].view(c.img_shape).cpu().numpy())
-    ax[0].set_title("recovered img")
-    ax[1].imshow(x[i].view(c.img_shape).cpu().numpy())
-    ax[1].set_title("original img")
-    fig.savefig(f"imgs/result{i}.png")
-    fig.clf()
+    oxi = out_x[i].cpu().numpy()
+    gtxi = x_test[i]
+
+    ssim = structural_similarity(oxi, gtxi, data_range=255)
+    dice = dice_loss(oxi/255.0, gtxi/255.0)
+    diff_mean = np.mean(oxi-gtxi)
+    diff_std  = np.std(oxi-gtxi)
+    mse = np.mean((oxi-gtxi)**2)
+    mtv  = total_var(oxi, gtxi)
+    metrics.append([ssim,dice,diff_mean,diff_std,mse,mtv])
+    
+    ax[0].imshow(oxi)
+    ax[0].set_title("recovered image")
+    ax[1].imshow(gtxi)
+    ax[1].set_title("ground truth")
+    fig.suptitle("SSIM: {:.3f}, Dice loss: {:.3f} \nstandard deviation: {:.2f}, total variation: {:.2f}".format(ssim, dice, diff_std, mtv))
+    ax[0].axis('off')
+    ax[1].axis('off')
+    fig.savefig(f"cmps/{y_test_name[i]}.png")
+    plt.close()
+metrics = np.array(metrics)
+ssim = metrics[:,0]
+dice = metrics[:,1]
+diff_mean = metrics[:,2]
+diff_std = metrics[:,3]
+mse = metrics[:,4]
+mtv = metrics[:,5]
+fig, ax = plt.subplots(3,2,constrained_layout=True)
+ax[0,0].hist(ssim,10)
+ax[0,0].set_title("SSIM")
+ax[0,1].hist(dice,10)
+ax[0,1].set_title("Dice loss")
+ax[1,0].hist(diff_mean,10)
+ax[1,0].set_title("Mean signed deviation")
+ax[1,1].hist(diff_std,10)
+ax[1,1].set_title("Standard deviation")
+ax[2,0].hist(mse,10)
+ax[2,0].set_title("Mean square error")
+ax[2,1].hist(mtv,10)
+ax[2,1].set_title("Total Variance")
+fig.savefig("metrics.png")
+plt.close()
