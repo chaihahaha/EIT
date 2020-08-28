@@ -30,7 +30,7 @@ class MyModel(nn.Module):
         hidden_channels = 128
 
         self.one_d_conv1 = nn.Sequential(
-                nn.Conv1d(2, 4, 3, padding=1),
+                nn.Conv1d(1, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv1d(4, 4, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
@@ -133,9 +133,10 @@ class MyModel(nn.Module):
 
     def conv1d(self, y):
         y = y.view(-1, 1, c.y_dim)
-        expy = torch.exp(y)
-        #fracy = torch.reciprocal(y)
-        y = torch.cat([y,expy],1)
+        #expy = torch.exp(y)
+        fracy = torch.reciprocal(y)
+        y = fracy
+        #y = torch.cat([y,expy],1)
         y1 = self.one_d_conv1(y)
         y2 = self.one_d_conv2(y1)
         y3 = self.one_d_conv3(y2)
