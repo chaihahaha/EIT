@@ -47,9 +47,15 @@ class MyModel(nn.Module):
                 nn.Conv1d(16, 16, 3, padding=1),
                 nn.LeakyReLU(0.2, inplace=True)
                 ) 
+        self.one_d_conv4 = nn.Sequential(
+                nn.Conv1d(16, 32, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv1d(32, 32, 3, padding=1),
+                nn.LeakyReLU(0.2, inplace=True)
+                ) 
 
         self.dense1 = nn.Sequential(
-                nn.Linear(y_dim, y_dim),
+                nn.Linear(y_dim*32, y_dim),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Linear(y_dim, y_dim*4),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -140,7 +146,8 @@ class MyModel(nn.Module):
         y1 = self.one_d_conv1(y)
         y2 = self.one_d_conv2(y1)
         y3 = self.one_d_conv3(y2)
-        return y3.view(-1, c.y_dim * 16)
+        y4 = self.one_d_conv4(y3)
+        return y4.view(-1, c.y_dim * 32)
 
     def fully_conn(self, y_conv):
         out = self.dense1(y_conv)
@@ -155,7 +162,8 @@ class MyModel(nn.Module):
 
         
     def forward(self, y):
-        out = self.fully_conn(torch.reciprocal(y))
+        y_conv = self.conv1d(y)
+        out = self.fully_conn(y_conv)
         out = self.conv2d(out)
         out = self.scaling(out)
         return out
