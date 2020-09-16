@@ -28,7 +28,7 @@ lr_init         = 1e-3
 #Batch size
 batch_size      = 40
 # Total number of epochs to train for
-n_epochs        = 601
+n_epochs        = 301
 # Saving frequency
 save_freq       = 200
 # End the epoch after this many iterations (or when the train loader is exhausted)
