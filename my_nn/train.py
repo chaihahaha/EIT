@@ -38,6 +38,8 @@ def train_epoch(i_epoch, test=False):
 
         batch_idx += 1
         x, y = Variable(x).to(c.device), Variable(y).to(c.device)
+        if c.add_noise > 0:
+            y += torch.randn(y.shape[0],y.shape[1]).to(c.device) * c.add_noise
 
         out = model.model(y)
         if c.train_forward_l2 != 0:

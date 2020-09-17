@@ -28,7 +28,7 @@ lr_init         = 1e-3
 #Batch size
 batch_size      = 40
 # Total number of epochs to train for
-n_epochs        = 301
+n_epochs        = 601
 # Saving frequency
 save_freq       = 200
 # End the epoch after this many iterations (or when the train loader is exhausted)
@@ -42,6 +42,8 @@ final_decay     = 0.5
 l2_weight_reg   = 1e-5
 # Parameters beta1, beta2 of the Adam optimizer
 adam_betas = (0.9, 0.95)
+# Noise level
+add_noise = 1e-3
 
 #####################
 #  Data Loader      #
