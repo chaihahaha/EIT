@@ -43,16 +43,14 @@ for filename  in txt:
     y = np.array([x.split(' ')[0] for x in open(filename).readlines()])
     y = y.astype(np.float)[np.newaxis,:]
     y = torch.from_numpy(y).float()
-    print(y.dtype)
     y = Variable(y).to("cuda")
     out_x = model.model(y).squeeze()
     fig, ax = plt.subplots(1,1)
     oxi = out_x.cpu().numpy()
-    #oxi = geometric_transform(oxi, p2c)
     ax.imshow(oxi)
     ax.axis('off')
     fig.savefig(f"{filename}.png", bbox_inches='tight')
-    fig.clf()
+    plt.close()
 
 y_test = torch.Tensor(np.load('testBoundary.npy'))
 x_test = np.load('testImages.npy')
