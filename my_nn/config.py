@@ -24,13 +24,13 @@ test_time_functions = []
 #######################
 
 # Initial learning rate
-lr_init         = 1e-3
+lr_init         = 5e-4
 #Batch size
 batch_size      = 160
 #Test batch size
 test_batch_size = 40
 # Total number of epochs to train for
-n_epochs        = 201
+n_epochs        = 401
 # Saving frequency
 save_freq       = 200
 # End the epoch after this many iterations (or when the train loader is exhausted)
