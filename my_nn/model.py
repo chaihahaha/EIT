@@ -134,7 +134,7 @@ class MyModel(nn.Module):
     def conv1d(self, y):
         y = y.view(-1, 1, c.y_dim)
         expy = torch.exp(y)
-        fracy = torch.reciprocal(y)
+        fracy = torch.where(y==0,torch.zeros_like(y), torch.reciprocal(y))
         y = torch.cat([y,fracy,expy],1)
         y1 = self.one_d_conv1(y)
         y2 = self.one_d_conv2(y1)

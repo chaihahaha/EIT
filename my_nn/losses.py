@@ -2,7 +2,7 @@ import torch
 import config as c
 import numpy as np
 def l2_fit(input, target):
-    return torch.sum((input - target)**2) / c.batch_size
+    return torch.mean((input - target)**2) / c.batch_size
 def MMD_matrix_multiscale(x, y, widths_exponents):
     x = x.view(x.shape[0],-1)
     y = y.view(y.shape[0],-1)

@@ -1,0 +1,6 @@
+my_nn/Additional_Results
+*.npy
+my_nn/*.npy
+__pycache__
+my_nn/__pycache__
+my_nn/checkpoints

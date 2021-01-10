@@ -17,7 +17,7 @@ df.to_csv('./filesList.csv')
 # Images
 from PIL import Image
 #left,upper,right,lower = 725, 75, 1750, 1143 # pour data
-left,upper,right,lower = 6, 0, 1231, 1225 # pour Adddata
+left,upper,right,lower = 502, 98, 1686, 1282 # pour Adddata
 import os
 
 im = []
