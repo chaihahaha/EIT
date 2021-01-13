@@ -67,7 +67,7 @@ def train_epoch(i_epoch, test=False):
 
 def main():
     monitoring.restart()
-    torch.backends.cudnn.enabled=False
+    #torch.backends.cudnn.enabled=False
 
     try:
         monitoring.print_config()

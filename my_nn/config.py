@@ -61,15 +61,15 @@ test_time_functions = []
 #######################
 
 # Initial learning rate
-lr_init         = 1e-4
+lr_init         = 2e-4
 #Batch size
-batch_size      = 80
+batch_size      = 160
 #Test batch size
 test_batch_size = 40
 # Total number of epochs to train for
 n_epochs        = 1001
 # Saving frequency
-save_freq       = 200
+save_freq       = 100
 # End the epoch after this many iterations (or when the train loader is exhausted)
 n_its_per_epoch = 100
 # For the first n epochs, train with a much lower learning rate. This can be
@@ -112,7 +112,7 @@ train_loader = torch.utils.data.DataLoader(
 ############
 
 train_forward_l2    = 1
-train_forward_mmd    = 0
+train_forward_mmd    = 0.1
 
 ###########
 #  Model  #
